@@ -1,0 +1,36 @@
+/* Playlist.module.css */
+.Playlist {
+    width: 40%;
+    max-height: 500px;
+    overflow-y: auto;
+    background: #1e1e1e;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.Playlist input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    margin-bottom: 10px;
+    border: 1px solid #1DB954;
+    border-radius: 5px;
+    outline: none;
+}
+
+.Playlist button {
+    width: 100%;
+    padding: 10px;
+    background-color: #1DB954;
+    border: none;
+    color: white;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: 0.3s ease-in-out;
+}
+
+.Playlist button:hover {
+    background-color: #17a746;
+}

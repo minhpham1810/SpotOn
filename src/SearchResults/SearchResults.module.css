@@ -1,0 +1,14 @@
+/* SearchResults.module.css */
+.SearchResults {
+    width: 40%;
+    max-height: 500px;
+    overflow-y: auto;
+    background: #282828;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.SearchResults h2 {
+    text-align: center;
+    margin-bottom: 15px;
+}
