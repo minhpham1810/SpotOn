@@ -1,71 +1,74 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# SpotOn - Music Discovery App 🎵
 
-## Available Scripts
+## Overview
 
-In the project directory, you can run:
+SpotOn is a **React-based** web application that allows users to **search for songs**, **view song details**, and **listen to previews** using the **Spotify API**. Users can browse songs, view detailed information, and save tracks to their playlist.
 
-### `npm start`
+## Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+* **Search Songs** – Enter a song name in the search bar and fetch results from Spotify.
+* **Song Details Page** – Click on a song to view its details, including:
+  * Song name
+  * Album
+  * Genre
+  * Cover Art
+  * Artist
+  * Song Credits
+  * Music Preview
+* **Play & Pause Music** – Embedded music player to play 30-second previews from Spotify.
+* **Save to Album** – Allows users to store favorite songs.
+* **Navigation** – Easily return to the homepage for further searches.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Tech Stack
 
-### `npm test`
+* **Frontend:** React.js, React Router, CSS Modules
+* **API:** Spotify Web API
+* **State Management:** useState, useEffect, useRef
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Setup & Installation
 
-### `npm run build`
+### 1️⃣ Clone the Repository
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```
+ git clone https://github.com/yourusername/spoton.git
+ cd spoton
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 2️⃣ Install Dependencies
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```
+npm install
+```
 
-### `npm run eject`
+### 3️⃣ Set Up Spotify API Credentials
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+2. Create an app and get **Client ID** and **Client Secret**.
+3. Add them to an `<span>.env</span>` file in the root directory:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+REACT_APP_SPOTIFY_CLIENT_ID=your_client_id
+REACT_APP_SPOTIFY_CLIENT_SECRET=your_client_secret
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### 4️⃣ Start the Application
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```
+npm start
+```
 
-## Learn More
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## How It Works
 
-### Code Splitting
+1. **Search for a song** → The app fetches results from the Spotify API.
+2. **Click on a song** → Redirects to a detailed song page.
+3. **Play the song preview** → Users can listen to the 30-second sample.
+4. **Navigate back** → The search bar remains available for further searches.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Future Improvements 
 
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-# application
+*  User authentication for personalized playlists.
+* Full song playback using OAuth and Spotify Premium.
+* Improved UI with animations and theming.
