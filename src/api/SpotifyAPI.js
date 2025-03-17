@@ -1,5 +1,5 @@
 const clientId = "de8bb872f3b64eed937fabdeb092c834"; // Replace with your actual Client ID
-const clientSecret = "255e6da046a14d5093cd2d9e26bb498a"; // Replace with your actual Client Secret
+const clientSecret = {{ secrets.SPOTIFY_API_KEY }}; // Replace with your actual Client Secret
 const redirectUri = "http://localhost:3000"; // Ensure this matches your Spotify App settings
 let accessToken = "";
 
