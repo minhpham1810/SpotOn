@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const clientId = process.env.REACT_APP_SPOTIFY_CLIENT_ID;
 const redirectUri = "http://localhost:3000";
 const authEndpoint = "https://accounts.spotify.com/authorize";
@@ -14,6 +15,12 @@ if (!clientId) {
 let accessToken = localStorage.getItem('spotify_access_token');
 let refreshToken = localStorage.getItem('spotify_refresh_token');
 let expiresAt = localStorage.getItem('spotify_expires_at');
+=======
+const clientId = "de8bb872f3b64eed937fabdeb092c834"; // Replace with your actual Client ID
+const clientSecret = {{ secrets.SPOTIFY_API_KEY }}; // Replace with your actual Client Secret
+const redirectUri = "http://localhost:3000"; // Ensure this matches your Spotify App settings
+let accessToken = "";
+>>>>>>> d0c94757642041acef51cbc24624497d7b8a2f0b
 
 const SpotifyAPI = {
     isAuthenticated() {
