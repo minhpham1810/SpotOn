@@ -1,19 +1,28 @@
 // Playlist.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import Tracklist from '../Tracklist/Tracklist';
 import styles from './Playlist.module.css';
 
-const mockPlaylist = [
-    { id: 3, name: "My Favorite Song", artist: "Artist 3", album: "Album 3" }
-];
+const Playlist = ({ tracks, onRemoveTrack }) => {
+    const [playlistName, setPlaylistName] = useState('My Playlist');
 
-const Playlist = () => {
     return (
         <div className={styles.Playlist}>
-            <h2>My Playlist</h2>
-            <input type="text" placeholder="New Playlist Name" />
-            <Tracklist tracks={mockPlaylist} />
-            <button>Save To Spotify</button>
+            <h2>{playlistName}</h2>
+            <input
+                type="text"
+                value={playlistName}
+                onChange={(e) => setPlaylistName(e.target.value)}
+                placeholder="Playlist Name"
+            />
+            <Tracklist
+                tracks={tracks}
+                onRemoveTrack={onRemoveTrack}
+                isPlaylist={true}
+            />
+            <button className={styles.SaveButton}>
+                Save To Spotify
+            </button>
         </div>
     );
 };

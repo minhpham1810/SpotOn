@@ -4,54 +4,133 @@ import { useParams, useNavigate } from 'react-router-dom';
 import styles from './SongDetails.module.css';
 import SpotifyAPI from '../api/SpotifyAPI';
 
-const SongDetails = () => {
+const SongDetails = ({ onAddToPlaylist }) => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [song, setSong] = useState(null);
+    const [songSummary, setSongSummary] = useState('');
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const audioRef = useRef(null);
 
     useEffect(() => {
         const fetchSongDetails = async () => {
-            const data = await SpotifyAPI.getTrackDetails(id);
-            setSong(data);
+            try {
+                setIsLoading(true);
+                const data = await SpotifyAPI.getTrackDetails(id);
+                setSong(data);
+
+                // Generate song summary using Gemini
+                const response = await fetch('/__mcp__/tool', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        server: 'gemini',
+                        tool: 'generate_song_summary',
+                        arguments: {
+                            title: data.name,
+                            artist: data.artist,
+                            album: data.album
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result && !result.isError) {
+                        setSongSummary(result.content[0].text);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching song details:', error);
+            } finally {
+                setIsLoading(false);
+            }
         };
         fetchSongDetails();
     }, [id]);
 
-    const playMusic = () => {
+    const togglePlayPause = () => {
         if (audioRef.current) {
-            audioRef.current.play();
+            if (isPlaying) {
+                audioRef.current.pause();
+            } else {
+                audioRef.current.play();
+            }
+            setIsPlaying(!isPlaying);
         }
     };
 
-    const pauseMusic = () => {
-        if (audioRef.current) {
-            audioRef.current.pause();
+    useEffect(() => {
+        const audioElement = audioRef.current;
+        if (audioElement) {
+            const handleEnded = () => setIsPlaying(false);
+            audioElement.addEventListener('ended', handleEnded);
+            return () => audioElement.removeEventListener('ended', handleEnded);
         }
+    }, []);
+
+    const handleSaveToPlaylist = () => {
+        onAddToPlaylist(song);
     };
+
+    if (isLoading) {
+        return <div className={styles.Loading}>Loading...</div>;
+    }
 
     if (!song) {
-        return <h2>Loading...</h2>;
+        return <div className={styles.Error}>Failed to load song details.</div>;
     }
 
     return (
         <div className={styles.SongDetails}>
-            <button onClick={() => navigate('/')}>Back to Homepage</button>
-            <h2>{song.name}</h2>
-            <img src={song.cover} alt={song.name} />
-            <p><strong>Artist:</strong> {song.artist}</p>
-            <p><strong>Album:</strong> {song.album}</p>
-            <p><strong>Genre:</strong> {song.genre}</p>
-            <p><strong>Credits:</strong> {song.credits}</p>
-            <div className={styles.AudioControls}>
-                <audio ref={audioRef} controls>
-                    <source src={song.preview_url} type="audio/mpeg" />
-                    Your browser does not support the audio element.
-                </audio>
-                <button onClick={playMusic}>Play</button>
-                <button onClick={pauseMusic}>Pause</button>
+            <button
+                className={styles.BackButton}
+                onClick={() => navigate('/')}
+            >
+                Back to Homepage
+            </button>
+            <div className={styles.Content}>
+                <img
+                    className={styles.Cover}
+                    src={song.cover}
+                    alt={song.name}
+                />
+                <div className={styles.Info}>
+                    <h2>{song.name}</h2>
+                    <p><strong>Artist:</strong> {song.artist}</p>
+                    <p><strong>Album:</strong> {song.album}</p>
+                    {songSummary && (
+                        <div className={styles.Summary}>
+                            <h3>Song Summary</h3>
+                            <p>{songSummary}</p>
+                        </div>
+                    )}
+                </div>
             </div>
-            <button>Save to Album</button>
+            
+            <div className={styles.AudioControls}>
+                <audio
+                    ref={audioRef}
+                    src={song.preview_url}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                />
+                <button
+                    className={styles.PlayButton}
+                    onClick={togglePlayPause}
+                >
+                    {isPlaying ? 'Pause' : 'Play Preview'}
+                </button>
+                <button
+                    className={styles.SaveButton}
+                    onClick={handleSaveToPlaylist}
+                >
+                    Add to Playlist
+                </button>
+            </div>
         </div>
     );
 };

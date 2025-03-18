@@ -1,36 +1,50 @@
 /* Playlist.module.css */
 .Playlist {
-    width: 40%;
-    max-height: 500px;
-    overflow-y: auto;
-    background: #1e1e1e;
-    padding: 15px;
-    border-radius: 10px;
+    flex: 1;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-left: 2rem;
+    min-height: 400px;
+}
+
+.Playlist h2 {
+    margin: 0 0 1rem;
+    color: #1a1a1a;
+    font-size: 1.5rem;
 }
 
 .Playlist input {
     width: 100%;
-    padding: 10px;
-    font-size: 16px;
-    margin-bottom: 10px;
-    border: 1px solid #1DB954;
-    border-radius: 5px;
+    padding: 0.8rem;
+    margin-bottom: 1.5rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.Playlist input:focus {
     outline: none;
+    border-color: #1DB954;
 }
 
-.Playlist button {
+.SaveButton {
     width: 100%;
-    padding: 10px;
-    background-color: #1DB954;
-    border: none;
+    padding: 1rem;
+    margin-top: 1rem;
+    background: #1DB954;
     color: white;
-    font-size: 16px;
-    border-radius: 5px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
     cursor: pointer;
-    margin-top: 10px;
-    transition: 0.3s ease-in-out;
+    transition: all 0.2s ease;
 }
 
-.Playlist button:hover {
-    background-color: #17a746;
+.SaveButton:hover {
+    background: #1ed760;
+    transform: translateY(-2px);
 }

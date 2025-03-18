@@ -1,38 +1,69 @@
 /* Track.module.css */
 .Track {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 10px;
-    border-radius: 5px;
-    background: #333;
-    transition: 0.2s ease-in-out;
+    justify-content: space-between;
+    padding: 1rem;
+    cursor: pointer;
+    border-radius: 8px;
+    background: #ffffff;
+    margin: 0.5rem 0;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .Track:hover {
-    background: #444;
+    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.Track h3 {
+.TrackInfo {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.Cover {
+    width: 60px;
+    height: 60px;
+    border-radius: 4px;
+    margin-right: 1rem;
+    object-fit: cover;
+}
+
+.Details {
+    flex: 1;
+}
+
+.Details h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 1.1rem;
+    color: #1a1a1a;
 }
 
-.Track p {
-    font-size: 14px;
-    color: gray;
+.Details p {
+    margin: 0.3rem 0 0;
+    font-size: 0.9rem;
+    color: #666;
 }
 
-.Track button {
-    padding: 5px 10px;
+.RemoveButton {
+    background: none;
     border: none;
-    background-color: #1DB954;
-    color: white;
-    font-size: 14px;
-    border-radius: 5px;
+    color: #dc3545;
+    font-size: 1.5rem;
     cursor: pointer;
+    padding: 0.5rem;
+    margin-left: 1rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
-.Track button:hover {
-    background-color: #17a746;
+.PlaylistTrack:hover .RemoveButton {
+    opacity: 1;
+}
+
+.RemoveButton:hover {
+    color: #c82333;
 }

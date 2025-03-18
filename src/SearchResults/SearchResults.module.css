@@ -1,14 +1,15 @@
 /* SearchResults.module.css */
 .SearchResults {
-    width: 40%;
-    max-height: 500px;
-    overflow-y: auto;
-    background: #282828;
-    padding: 15px;
-    border-radius: 10px;
+    flex: 1;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    min-height: 400px;
 }
 
 .SearchResults h2 {
-    text-align: center;
-    margin-bottom: 15px;
+    margin: 0 0 1.5rem;
+    color: #1a1a1a;
+    font-size: 1.5rem;
 }
