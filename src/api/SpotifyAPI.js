@@ -176,8 +176,7 @@ const SpotifyAPI = {
                 name: track.name,
                 artist: track.artists[0].name,
                 album: track.album.name,
-                cover: track.album.images[0]?.url || "default-cover.jpg",
-                preview_url: track.preview_url // Keep preview URL even if null
+                cover: track.album.images[0]?.url || "default-cover.jpg"
             }));
         } catch (error) {
             console.error('Search error:', error);
@@ -188,59 +187,100 @@ const SpotifyAPI = {
     async getTrackDetails(trackId) {
         const token = await this.getAccessToken();
         
-        // Try each market until we find a preview
-        for (const market of this.markets) {
-            try {
-                const response = await fetch(
-                    `https://api.spotify.com/v1/tracks/${trackId}?market=${market}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    }
-                );
-
-                if (response.ok) {
-                    const track = await response.json();
-                    if (track.preview_url) {
-                        return {
-                            id: track.id,
-                            name: track.name,
-                            artist: track.artists[0].name,
-                            album: track.album.name,
-                            cover: track.album.images[0]?.url || "default-cover.jpg",
-                            preview_url: track.preview_url
-                        };
+        try {
+            const response = await fetch(
+                `https://api.spotify.com/v1/tracks/${trackId}?market=US`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
                     }
                 }
-            } catch (error) {
-                console.error(`Track details error for market ${market}:`, error);
-            }
-        }
+            );
 
-        // If no preview found, return track without preview
-        const response = await fetch(
-            `https://api.spotify.com/v1/tracks/${trackId}?market=US`,
-            {
+            if (!response.ok) {
+                throw new Error("Failed to fetch track details");
+            }
+
+            const track = await response.json();
+
+            return {
+                id: track.id,
+                name: track.name,
+                artist: track.artists[0].name,
+                album: track.album.name,
+                cover: track.album.images[0]?.url || "default-cover.jpg",
+                releaseDate: track.album.release_date
+            };
+        } catch (error) {
+            console.error('Track details error:', error);
+            throw error;
+        }
+    },
+
+    async createPlaylist(playlistName, tracks) {
+        const token = await this.getAccessToken();
+
+        try {
+            // First, get the user's ID
+            const userResponse = await fetch('https://api.spotify.com/v1/me', {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
+            });
+
+            if (!userResponse.ok) {
+                throw new Error('Failed to get user information');
             }
-        );
 
-        if (!response.ok) {
-            throw new Error("Failed to fetch track details");
+            const userData = await userResponse.json();
+
+            // Create a new playlist
+            const createResponse = await fetch(
+                `https://api.spotify.com/v1/users/${userData.id}/playlists`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: playlistName,
+                        description: 'Created with SpotOn',
+                        public: false
+                    })
+                }
+            );
+
+            if (!createResponse.ok) {
+                throw new Error('Failed to create playlist');
+            }
+
+            const playlistData = await createResponse.json();
+
+            // Add tracks to the playlist
+            const addTracksResponse = await fetch(
+                `https://api.spotify.com/v1/playlists/${playlistData.id}/tracks`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        uris: tracks.map(track => `spotify:track:${track.id}`)
+                    })
+                }
+            );
+
+            if (!addTracksResponse.ok) {
+                throw new Error('Failed to add tracks to playlist');
+            }
+
+            return playlistData;
+        } catch (error) {
+            console.error('Error creating playlist:', error);
+            throw error;
         }
-
-        const track = await response.json();
-        return {
-            id: track.id,
-            name: track.name,
-            artist: track.artists[0].name,
-            album: track.album.name,
-            cover: track.album.images[0]?.url || "default-cover.jpg",
-            preview_url: null
-        };
     }
 };
 

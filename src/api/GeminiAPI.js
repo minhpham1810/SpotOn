@@ -10,7 +10,7 @@ const GeminiAPI = {
         return apiKey;
     },
 
-    async generateSongSummary({ name, artist, album }) {
+    async generateSongInfo({ name, artist, album }) {
         try {
             console.log('Generating summary for:', name, 'by', artist);
             const apiKey = this.getApiKey();
@@ -22,21 +22,36 @@ const GeminiAPI = {
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-pro-exp-02-05" });
 
-            const prompt = 
-`Generate a 2-3 sentence summary of the song "${name}" by ${artist} from the album "${album || 'Unknown'}".
-Focus on key points:
-- Musical style and genre
-- Song's theme or message
-- Cultural impact or significance
-Keep the tone informative and engaging.`;
+            const prompt =
+`For the song "${name}" by ${artist} from the album "${album || 'Unknown'}", provide the following information in JSON format:
+
+{
+  "summary": "2-3 sentence summary focusing on theme and cultural impact",
+  "genre": ["List of primary and secondary music genres"],
+  "credits": [
+    {
+      "name": "Name of contributor",
+      "role": "Their role (e.g., songwriter, producer, featured artist)"
+    }
+  ]
+}
+
+Focus on accuracy and be specific about genres and roles. Include at least the primary artist and any key contributors.`;
 
             console.log('Making request to Gemini API...');
             
             const result = await model.generateContent(prompt);
             const text = result.response.text();
             
-            console.log('Generated summary:', text.substring(0, 50) + '...');
-            return text;
+            // Extract JSON from the response
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error('Failed to parse Gemini API response');
+            }
+
+            const songInfo = JSON.parse(jsonMatch[0]);
+            console.log('Generated song info:', songInfo);
+            return songInfo;
 
         } catch (error) {
             console.error('Error generating summary:', error);

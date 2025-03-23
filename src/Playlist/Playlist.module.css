@@ -87,8 +87,15 @@
     border-color: #1DB954;
 }
 
-.SaveButton:hover {
+.SaveButton:hover:not(:disabled) {
     background: #1ed760;
+}
+
+.SaveButton:disabled {
+    background: rgba(29, 185, 84, 0.5);
+    border-color: rgba(29, 185, 84, 0.5);
+    cursor: not-allowed;
+    transform: none;
 }
 
 .Content {

@@ -1,8 +1,11 @@
 /* SongDetails.module.css */
 .SongDetails {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .BackButton {
@@ -18,6 +21,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    width: fit-content;
 }
 
 .BackButton::before {
@@ -31,15 +35,23 @@
 }
 
 .Content {
-    display: flex;
+    display: grid;
+    grid-template-columns: 350px 1fr;
     gap: 2rem;
     margin-bottom: 2rem;
     animation: fadeIn 0.5s ease;
+    height: calc(100vh - 160px);
+}
+
+.LeftColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .Cover {
-    width: 300px;
-    height: 300px;
+    width: 100%;
+    aspect-ratio: 1;
     border-radius: 8px;
     object-fit: cover;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -50,25 +62,35 @@
     transform: scale(1.02);
 }
 
-.Info {
-    flex: 1;
+.BasicInfo {
     color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
 }
 
-.Info h2 {
+.BasicInfo h2 {
     margin: 0 0 1rem;
     font-size: 2rem;
     color: #fff;
 }
 
-.Info p {
+.BasicInfo p {
     margin: 0.5rem 0;
     font-size: 1.1rem;
     color: rgba(255, 255, 255, 0.8);
 }
 
-.Summary {
-    margin-top: 2rem;
+.RightColumn {
+    overflow-y: auto;
+    padding-right: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.Credits {
     padding: 1.5rem;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 12px;
@@ -76,9 +98,41 @@
     transition: all 0.3s ease;
 }
 
-.Summary:hover {
-    background: rgba(255, 255, 255, 0.08);
-    transform: translateY(-2px);
+.Credits h3 {
+    margin: 0 0 1rem;
+    font-size: 1.2rem;
+    color: #1DB954;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.Credits h3::before {
+    content: "🎵";
+}
+
+.Credits ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.Credits li {
+    padding: 0.5rem 0;
+    color: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.Credits li:last-child {
+    border-bottom: none;
+}
+
+.Summary {
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
 }
 
 .Summary h3 {
@@ -101,20 +155,37 @@
     font-size: 1rem;
 }
 
+.LoadingContainer {
+    margin: 2rem 0;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeIn 0.5s ease;
+}
+
 .LoadingText {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.1rem;
     font-style: italic;
+    text-align: center;
+    margin: 0;
     animation: pulse 2s infinite;
 }
 
-.AudioControls {
+.Controls {
     display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
+    justify-content: center;
+    margin-top: auto;
+    padding-top: 2rem;
     animation: slideUp 0.5s ease;
 }
 
-.PlayButton, .SaveButton {
+.SaveButton {
     padding: 0.8rem 1.5rem;
     border: none;
     border-radius: 25px;
@@ -126,50 +197,21 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-}
-
-.PlayButton {
     background: #1DB954;
     color: white;
 }
 
-.PlayButton:disabled {
-    opacity: 0.7;
-    cursor: wait;
-}
-
-.PlayButton:not(:disabled):hover {
+.SaveButton:hover:not(:disabled) {
     background: #1ed760;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(29, 185, 84, 0.3);
 }
 
-.SaveButton {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.SaveButton:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
-}
-
-.NoPreview {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: rgba(255, 255, 255, 0.6);
-    font-style: italic;
-    padding: 0.8rem 1.5rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 25px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.NoPreview::before {
-    content: "🎵";
-    opacity: 0.7;
+.SaveButton:disabled {
+    background: rgba(29, 185, 84, 0.5);
+    border-color: rgba(29, 185, 84, 0.5);
+    cursor: not-allowed;
+    transform: none;
 }
 
 @keyframes pulse {
@@ -202,28 +244,40 @@
 
 @media (max-width: 768px) {
     .Content {
-        flex-direction: column;
+        grid-template-columns: 1fr;
+        height: auto;
+        gap: 1.5rem;
+    }
+
+    .LeftColumn {
         align-items: center;
         text-align: center;
     }
 
     .Cover {
-        width: 100%;
         max-width: 300px;
-        height: auto;
-        aspect-ratio: 1;
     }
 
-    .AudioControls {
+    .RightColumn {
+        padding-right: 0;
+    }
+
+    .BasicInfo, .Credits, .Summary {
+        text-align: left;
+    }
+
+    .Controls {
         flex-direction: column;
         align-items: stretch;
+        margin-top: 2rem;
     }
 
-    .PlayButton, .SaveButton, .NoPreview {
+    .SaveButton {
         width: 100%;
     }
 
-    .Summary {
-        text-align: left;
+    .LoadingContainer {
+        margin: 1rem 0;
+        padding: 1.5rem;
     }
 }

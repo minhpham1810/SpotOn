@@ -1,16 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useToast } from '../contexts/ToastContext';
+import SpotifyAPI from '../api/SpotifyAPI';
 import styles from './Playlist.module.css';
 
 const Playlist = ({ tracks, onRemoveTrack, name, onNameChange }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(name);
+    const [isSaving, setIsSaving] = useState(false);
     const inputRef = useRef(null);
     const { showToast } = useToast();
 
-    const handleSavePlaylist = () => {
-        // TODO: Implement save to Spotify functionality
-        showToast('Playlist saving coming soon!', 'success');
+    const handleSavePlaylist = async () => {
+        if (tracks.length === 0) {
+            showToast('Cannot save empty playlist', 'error');
+            return;
+        }
+
+        try {
+            setIsSaving(true);
+            await SpotifyAPI.createPlaylist(name, tracks);
+            showToast('Playlist saved to Spotify successfully!', 'success');
+        } catch (error) {
+            console.error('Error saving playlist:', error);
+            showToast('Failed to save playlist: ' + error.message, 'error');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleClearPlaylist = () => {
@@ -79,12 +94,13 @@ const Playlist = ({ tracks, onRemoveTrack, name, onNameChange }) => {
                 <div className={styles.Controls}>
                     {tracks.length > 0 && (
                         <>
-                            <button 
+                            <button
                                 className={`${styles.Button} ${styles.SaveButton}`}
                                 onClick={handleSavePlaylist}
+                                disabled={isSaving}
                                 title="Save to Spotify"
                             >
-                                Save to Spotify
+                                {isSaving ? 'Saving...' : 'Save to Spotify'}
                             </button>
                             <button 
                                 className={styles.Button}
