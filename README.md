@@ -74,17 +74,8 @@ REACT_APP_GEMINI_API_KEY=your_gemini_api_key
 ```
 
 4️⃣ Start the Application
-Start Backend Server
 
 ```
-cd server
-npm start
-```
-
-Start Frontend Dev Server
-
-```
-cd ../client
 npm start
 ```
 
