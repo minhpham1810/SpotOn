@@ -1,0 +1,108 @@
+/* Toast.module.css */
+.ToastContainer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.Toast {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(100%);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    min-width: 200px;
+    max-width: 400px;
+    pointer-events: auto;
+}
+
+.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.content {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.icon {
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+
+/* Success state */
+.success {
+    border: 1px solid rgba(29, 185, 84, 0.3);
+}
+
+.success .icon {
+    color: #1DB954;
+}
+
+/* Error state */
+.error {
+    border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+.error .icon {
+    color: #ff4444;
+}
+
+/* Animation */
+@keyframes slideIn {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    .Toast {
+        width: 90%;
+        max-width: none;
+    }
+
+    .content {
+        font-size: 0.9rem;
+    }
+}

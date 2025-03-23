@@ -1,130 +1,193 @@
-// SongDetails.jsx
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useToast } from '../contexts/ToastContext';
+import { 
+    isAudioPlaybackSupported, 
+    createAudio, 
+    stopOtherAudio, 
+    attemptPlay 
+} from '../utils/audioUtils';
 import styles from './SongDetails.module.css';
 import SpotifyAPI from '../api/SpotifyAPI';
+import GeminiAPI from '../api/GeminiAPI';
 
 const SongDetails = ({ onAddToPlaylist }) => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const [song, setSong] = useState(null);
     const [songSummary, setSongSummary] = useState('');
     const [isPlaying, setIsPlaying] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+    const [hasAudioSupport, setHasAudioSupport] = useState(true);
+    const [error, setError] = useState(null);
     const audioRef = useRef(null);
+
+    // Check audio support on mount
+    useEffect(() => {
+        setHasAudioSupport(isAudioPlaybackSupported());
+    }, []);
 
     useEffect(() => {
         const fetchSongDetails = async () => {
             try {
-                setIsLoading(true);
                 const data = await SpotifyAPI.getTrackDetails(id);
                 setSong(data);
-
-                // Generate song summary using Gemini
-                const response = await fetch('/__mcp__/tool', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        server: 'gemini',
-                        tool: 'generate_song_summary',
-                        arguments: {
-                            title: data.name,
-                            artist: data.artist,
-                            album: data.album
-                        }
-                    })
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result && !result.isError) {
-                        setSongSummary(result.content[0].text);
-                    }
-                }
+                
+                // Generate song summary
+                setIsLoadingSummary(true);
+                const summary = await GeminiAPI.generateSongSummary(data);
+                setSongSummary(summary);
+                setIsLoadingSummary(false);
             } catch (error) {
                 console.error('Error fetching song details:', error);
-            } finally {
-                setIsLoading(false);
+                setError('Failed to load song details');
+                showToast('Failed to load song details', 'error');
             }
         };
-        fetchSongDetails();
-    }, [id]);
 
-    const togglePlayPause = () => {
-        if (audioRef.current) {
+        fetchSongDetails();
+
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, [id, showToast]);
+
+    // Initialize audio when song changes
+    useEffect(() => {
+        if (!song?.preview_url || !hasAudioSupport) return;
+
+        const handleEnded = () => setIsPlaying(false);
+        const handleError = () => {
+            setIsPlaying(false);
+            setIsLoading(false);
+            showToast('Failed to load audio preview', 'error');
+        };
+
+        audioRef.current = createAudio(song.preview_url, handleEnded, handleError);
+
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, [song?.preview_url, hasAudioSupport, showToast]);
+
+    const handlePlayPause = async () => {
+        if (!song.preview_url) {
+            showToast('No preview available for this song', 'error');
+            return;
+        }
+
+        if (!hasAudioSupport) {
+            showToast('Audio playback is not supported in your browser', 'error');
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            stopOtherAudio(audioRef.current);
+
             if (isPlaying) {
                 audioRef.current.pause();
+                setIsPlaying(false);
             } else {
-                audioRef.current.play();
+                const playSuccess = await attemptPlay(audioRef.current);
+                if (playSuccess) {
+                    setIsPlaying(true);
+                } else {
+                    showToast('Failed to play preview', 'error');
+                }
             }
-            setIsPlaying(!isPlaying);
+        } catch (error) {
+            console.error('Playback error:', error);
+            showToast('Failed to play preview', 'error');
+        } finally {
+            setIsLoading(false);
         }
     };
-
-    useEffect(() => {
-        const audioElement = audioRef.current;
-        if (audioElement) {
-            const handleEnded = () => setIsPlaying(false);
-            audioElement.addEventListener('ended', handleEnded);
-            return () => audioElement.removeEventListener('ended', handleEnded);
-        }
-    }, []);
 
     const handleSaveToPlaylist = () => {
-        onAddToPlaylist(song);
+        try {
+            onAddToPlaylist(song);
+            showToast(`Added "${song.name}" to playlist`, 'success');
+        } catch (error) {
+            showToast('Failed to add song to playlist', 'error');
+        }
     };
 
-    if (isLoading) {
-        return <div className={styles.Loading}>Loading...</div>;
+    if (error) {
+        return (
+            <div className={styles.Error}>
+                <p>{error}</p>
+                <button onClick={() => navigate('/')}>Back to Homepage</button>
+            </div>
+        );
     }
 
     if (!song) {
-        return <div className={styles.Error}>Failed to load song details.</div>;
+        return <div className={styles.Loading}>Loading...</div>;
     }
 
     return (
         <div className={styles.SongDetails}>
-            <button
+            <button 
                 className={styles.BackButton}
-                onClick={() => navigate('/')}
+                onClick={() => {
+                    if (isPlaying && audioRef.current) {
+                        audioRef.current.pause();
+                    }
+                    navigate('/');
+                }}
             >
                 Back to Homepage
             </button>
             <div className={styles.Content}>
-                <img
-                    className={styles.Cover}
-                    src={song.cover}
-                    alt={song.name}
+                <img 
+                    className={styles.Cover} 
+                    src={song.cover} 
+                    alt={song.name} 
                 />
                 <div className={styles.Info}>
                     <h2>{song.name}</h2>
                     <p><strong>Artist:</strong> {song.artist}</p>
                     <p><strong>Album:</strong> {song.album}</p>
-                    {songSummary && (
-                        <div className={styles.Summary}>
-                            <h3>Song Summary</h3>
+                    
+                    <div className={styles.Summary}>
+                        <h3>About this Song</h3>
+                        {isLoadingSummary ? (
+                            <p className={styles.LoadingText}>
+                                Generating insights about this song...
+                            </p>
+                        ) : (
                             <p>{songSummary}</p>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
             
             <div className={styles.AudioControls}>
-                <audio
-                    ref={audioRef}
-                    src={song.preview_url}
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                />
-                <button
-                    className={styles.PlayButton}
-                    onClick={togglePlayPause}
-                >
-                    {isPlaying ? 'Pause' : 'Play Preview'}
-                </button>
-                <button
+                {song.preview_url && hasAudioSupport ? (
+                    <button 
+                        className={styles.PlayButton}
+                        onClick={handlePlayPause}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? '⌛' : isPlaying ? 'Pause Preview' : 'Play Preview'}
+                    </button>
+                ) : (
+                    <p className={styles.NoPreview}>
+                        {!hasAudioSupport 
+                            ? 'Audio playback not supported in your browser' 
+                            : 'No preview available'}
+                    </p>
+                )}
+                <button 
                     className={styles.SaveButton}
                     onClick={handleSaveToPlaylist}
                 >
