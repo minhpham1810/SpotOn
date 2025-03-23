@@ -50,75 +50,58 @@ The backend acts as a secure middleware between the frontend and third-party API
 - 🤖 **Gemini Summary Endpoint** – Receives song metadata and returns AI-generated summaries.  
 - 🔗 **CORS & Routing** – Enables communication between client and server.
 
-### Folder Structure  
-/server ├── index.js # Express server entry ├── routes/ │ ├── spotify.js # Spotify token and search handling │ └── gemini.js # Gemini summary handling ├── services/ │ ├── spotifyService.js │ └── geminiService.js ├── .env └── package.json
-
-yaml
-Copy
-Edit
-
 ---
 
 ## Setup & Installation  
 
 ### 1️⃣ Clone the Repository  
-git clone https://github.com/yourusername/spoton.git  
-cd spoton
-2️⃣ Install Dependencies
-Frontend
-bash
-Copy
-Edit
-cd client
-npm install
-Backend
-bash
-Copy
-Edit
-cd ../server
-npm install
-3️⃣ Set Up API Credentials
-Frontend .env
-Create a .env file in the client directory:
 
-env
-Copy
-Edit
+```
+git clone https://github.com/yourusername/spoton.git  
+cd SpotOn
+```
+
+2️⃣ Install Dependencies
+
+```
+npm install
+```
+
+3️⃣ Set Up API Credentials
+
+Create a .env file in the directory:
+
+```
 REACT_APP_SPOTIFY_CLIENT_ID=your_spotify_client_id  
 REACT_APP_SPOTIFY_CLIENT_SECRET=your_spotify_client_secret  
-REACT_APP_GEMINI_API_KEY=your_gemini_api_key  
-Backend .env
-Create a .env file in the server directory:
+REACT_APP_GEMINI_API_KEY=your_gemini_api_key
+```
 
-env
-Copy
-Edit
-SPOTIFY_CLIENT_ID=your_spotify_client_id  
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret  
-GEMINI_API_KEY=your_gemini_api_key  
 4️⃣ Start the Application
 Start Backend Server
-bash
-Copy
-Edit
+
+```
 cd server
 npm start
+```
+
 Start Frontend Dev Server
-bash
-Copy
-Edit
+
+```
 cd ../client
 npm start
+```
+
 How It Works
-Search for a song → Frontend sends request to backend, which queries Spotify API.
+1. Search for a song → Frontend sends request to backend, which queries Spotify API.
 
-Click on a song → Redirects to a detailed page showing song info.
+2. Click on a song → Redirects to a detailed page showing song info.
 
-AI-generated summary → Backend sends song metadata to Gemini and returns a tailored description.
+3. AI-generated summary → Backend sends song metadata to Gemini and returns a tailored description.
 
-Play song preview → 30-second clip streamed from Spotify.
+4. Play song preview → 30-second clip streamed from Spotify.
 
-Save to album → Users can save favorite songs locally (database optional).
+5. Save to album → Users can save favorite songs locally (database optional).
 
 Future Improvements
 🔐 User authentication for personalized playlists
