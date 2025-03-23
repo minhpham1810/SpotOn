@@ -1,6 +1,6 @@
 // App.jsx
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import SearchBar from '../SearchBar/SearchBar';
 import SearchResults from '../SearchResults/SearchResults';
 import Playlist from '../Playlist/Playlist';
@@ -119,6 +119,11 @@ const MainContent = () => {
         showToast(`Playlist renamed to "${newName}"`, 'success');
     };
 
+    const clearPlaylist = () => {
+        setPlaylist([]);
+        showToast('Playlist cleared', 'success');
+    };
+
     if (isLoading) {
         return (
             <div className={styles.LoadingContainer}>
@@ -133,41 +138,53 @@ const MainContent = () => {
 
     return (
         <div className={styles.App}>
-            <header className={styles.Header}>
-                <h1>SpotOn</h1>
-                <button 
-                    className={styles.LogoutButton}
-                    onClick={handleLogout}
-                >
-                    Logout
-                </button>
-            </header>
-            <SearchBar onSearch={searchSpotify} />
-            <Routes>
-                <Route path="/" element={
-                    <div className={styles.mainContainer}>
-                        <SearchResults 
-                            searchResults={searchResults} 
-                            onAddTrack={addToPlaylist}
-                        />
-                        <Playlist 
-                            name={playlistName}
-                            onNameChange={updatePlaylistName}
-                            tracks={playlist} 
-                            onRemoveTrack={removeFromPlaylist} 
-                        />
-                    </div>
-                } />
-                <Route path="/song/:id" element={
-                    <SongDetails onAddToPlaylist={addToPlaylist} />
-                } />
-                <Route path="/login" element={<Login />} />
-                <Route path="/callback" element={
-                    <div className={styles.LoadingContainer}>
-                        <LoadingSpinner size="large" />
-                    </div>
-                } />
-            </Routes>
+            {!isAuthenticated ? (
+                <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/callback" element={
+                        <div className={styles.LoadingContainer}>
+                            <LoadingSpinner size="large" />
+                        </div>
+                    } />
+                    <Route path="*" element={<Login />} />
+                </Routes>
+            ) : (
+                <>
+                    <header className={styles.Header}>
+                        <h1>SpotOn</h1>
+                        <button
+                            className={styles.LogoutButton}
+                            onClick={handleLogout}
+                        >
+                            Logout
+                        </button>
+                    </header>
+                    <SearchBar onSearch={searchSpotify} />
+                    <Routes>
+                        <Route path="/" element={
+                            <div className={styles.mainContainer}>
+                                <SearchResults
+                                    searchResults={searchResults}
+                                    onAddTrack={addToPlaylist}
+                                />
+                                <Playlist
+                                    name={playlistName}
+                                    onNameChange={updatePlaylistName}
+                                    tracks={playlist}
+                                    onRemoveTrack={removeFromPlaylist}
+                                    onClearPlaylist={clearPlaylist}
+                                />
+                            </div>
+                        } />
+                        <Route path="/song/:id" element={
+                            <SongDetails onAddToPlaylist={addToPlaylist} />
+                        } />
+                        <Route path="*" element={
+                            <Navigate to="/" replace />
+                        } />
+                    </Routes>
+                </>
+            )}
         </div>
     );
 };

@@ -1,69 +1,76 @@
-# SpotOn - Music Discovery App 🎵
+# SpotOn - AI Music Companion 🎵
 
-## Overview  
-**SpotOn** is a full-stack music discovery web application that allows users to search for songs, view detailed information, and listen to previews using the Spotify API. Users can browse music, explore AI-generated summaries, and save tracks to a personal playlist.
+## Overview
 
-## Features  
-- 🔍 **Search Songs** – Enter a song name in the search bar and fetch results from Spotify.  
+**SpotOn** is a full-stack music discovery web application that allows users to search for songs and view detailed information using the Spotify API. Users can browse music, explore AI-generated summaries, and save tracks to a personal playlist.
+
+## Features
+
+- 🔍 **Search Songs** – Enter a song name in the search bar and fetch results from Spotify.
 - 📄 **Song Details Page** – Click on a song to view its details, including:
-  - Song name  
-  - Album  
-  - Genre  
-  - Cover Art  
-  - Artist  
-  - Song Credits  
-- ▶️ **Play & Pause Music** – Embedded music player to play 30-second previews from Spotify.  
-- 💾 **Save to Album** – Allows users to store favorite songs.  
-- 🤖 **AI-Generated Summaries** – Integrated with Google Gemini API to generate informative and tailored song descriptions based on metadata.  
+  - Song name
+  - Album
+  - Genre
+  - Cover Art
+  - Artist
+  - Song Credits
+- ▶️ **Play & Pause Music** – Embedded music player to play 30-second previews from Spotify.
+- 💾 **Save to Album** – Allows users to store favorite songs.
+- 🤖 **AI-Generated Summaries** – Integrated with Google Gemini API to generate informative and tailored song descriptions based on metadata.
 - 🧭 **Navigation** – Easily return to the homepage for further searches.
 
-## Tech Stack  
+## Tech Stack
 
-### Frontend  
-- React.js  
-- React Router  
-- CSS Modules  
+### Frontend
 
-### Backend  
-- Node.js  
+- React.js
+- React Router
+- CSS Modules
 
-### APIs  
-- Spotify Web API  
-- Google Gemini API  
+### Backend
 
-### State Management  
-- React Hooks: `useState`, `useEffect`, `useRef`  
+- Node.js
+
+### APIs
+
+- Spotify Web API
+- Google Gemini API
+
+### State Management
+
+- React Hooks: `useState`, `useEffect`, `useRef`
 
 ---
 
-## Backend Overview  
+## Backend Overview
 
 The backend acts as a secure middleware between the frontend and third-party APIs. It handles authentication, token management, and Gemini AI integration.
 
-### Key Responsibilities  
-- 🎫 **Spotify Token Handling** – Exchanges client credentials for access tokens.  
-- 🔐 **API Security** – Hides sensitive API keys and secrets.  
-- 🤖 **Gemini Summary Endpoint** – Receives song metadata and returns AI-generated summaries.  
+### Key Responsibilities
+
+- 🎫 **Spotify Token Handling** – Exchanges client credentials for access tokens.
+- 🔐 **API Security** – Hides sensitive API keys and secrets.
+- 🤖 **Gemini Summary Endpoint** – Receives song metadata and returns AI-generated summaries.
 - 🔗 **CORS & Routing** – Enables communication between client and server.
 
 ---
 
-## Setup & Installation  
+## Setup & Installation
 
-### 1️⃣ Clone the Repository  
+### 1️⃣ Clone the Repository
 
 ```
 git clone https://github.com/yourusername/spoton.git  
 cd SpotOn
 ```
 
-2️⃣ Install Dependencies
+### 2️⃣ Install Dependencies
 
 ```
 npm install
 ```
 
-3️⃣ Set Up API Credentials
+### 3️⃣ Set Up API Credentials
 
 Create a .env file in the directory:
 
@@ -73,19 +80,17 @@ REACT_APP_SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 REACT_APP_GEMINI_API_KEY=your_gemini_api_key
 ```
 
-4️⃣ Start the Application
+### 4️⃣ Start the Application
 
 ```
 npm start
 ```
 
 How It Works
+
 1. Search for a song → Frontend sends request to backend, which queries Spotify API.
-
 2. Click on a song → Redirects to a detailed page showing song info.
-
 3. AI-generated summary → Backend sends song metadata to Gemini and returns a tailored description.
-
 4. Save to album → Users can save favorite songs locally (database optional).
 
 Future Improvements

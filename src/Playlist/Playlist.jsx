@@ -3,7 +3,7 @@ import { useToast } from '../contexts/ToastContext';
 import SpotifyAPI from '../api/SpotifyAPI';
 import styles from './Playlist.module.css';
 
-const Playlist = ({ tracks, onRemoveTrack, name, onNameChange }) => {
+const Playlist = ({ tracks, onRemoveTrack, name, onNameChange, onClearPlaylist }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(name);
     const [isSaving, setIsSaving] = useState(false);
@@ -30,8 +30,7 @@ const Playlist = ({ tracks, onRemoveTrack, name, onNameChange }) => {
 
     const handleClearPlaylist = () => {
         if (window.confirm('Are you sure you want to clear the playlist?')) {
-            tracks.forEach(track => onRemoveTrack(track.id));
-            showToast('Playlist cleared', 'success');
+            onClearPlaylist();
         }
     };
 
