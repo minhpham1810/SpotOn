@@ -12,7 +12,6 @@
   - Cover Art  
   - Artist  
   - Song Credits  
-  - Music Preview  
 - ▶️ **Play & Pause Music** – Embedded music player to play 30-second previews from Spotify.  
 - 💾 **Save to Album** – Allows users to store favorite songs.  
 - 🤖 **AI-Generated Summaries** – Integrated with Google Gemini API to generate informative and tailored song descriptions based on metadata.  
@@ -27,9 +26,6 @@
 
 ### Backend  
 - Node.js  
-- Express.js  
-- Axios  
-- dotenv  
 
 ### APIs  
 - Spotify Web API  
@@ -99,9 +95,7 @@ How It Works
 
 3. AI-generated summary → Backend sends song metadata to Gemini and returns a tailored description.
 
-4. Play song preview → 30-second clip streamed from Spotify.
-
-5. Save to album → Users can save favorite songs locally (database optional).
+4. Save to album → Users can save favorite songs locally (database optional).
 
 Future Improvements
 🔐 User authentication for personalized playlists
