@@ -14,7 +14,6 @@
   - Cover Art
   - Artist
   - Song Credits
-- ▶️ **Play & Pause Music** – Embedded music player to play 30-second previews from Spotify.
 - 💾 **Save to Album** – Allows users to store favorite songs.
 - 🤖 **AI-Generated Summaries** – Integrated with Google Gemini API to generate informative and tailored song descriptions based on metadata.
 - 🧭 **Navigation** – Easily return to the homepage for further searches.
@@ -94,7 +93,6 @@ How It Works
 4. Save to album → Users can save favorite songs locally (database optional).
 
 Future Improvements
-🔐 User authentication for personalized playlists
 
 🔊 Full song playback via Spotify Premium OAuth
 
