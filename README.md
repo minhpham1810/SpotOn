@@ -1,8 +1,11 @@
 # SpotOn - AI Music Companion 🎵
 
-## Overview
+## Why SpotOn?
 
-**SpotOn** is a full-stack music discovery web application that allows users to search for songs and view detailed information using the Spotify API. Users can browse music, explore AI-generated summaries, and save tracks to a personal playlist.
+Finding new music is easy. *Finding music that resonates with you*—your mood, your vibe, your story—isn't.  
+**SpotOn** tackles this real-world challenge by blending AI intelligence with Spotify’s massive music catalog, offering a smarter, more personal way to discover, explore, and save songs.
+
+Whether you're a casual listener, a playlist perfectionist, or a curious music nerd, SpotOn gives you more than just track info—it helps you understand the song behind the sound.
 
 ## Features
 
@@ -14,8 +17,8 @@
   - Cover Art
   - Artist
   - Song Credits
-- 💾 **Save to Album** – Allows users to store favorite songs.
-- 🤖 **AI-Generated Summaries** – Integrated with Google Gemini API to generate informative and tailored song descriptions based on metadata.
+- 💾 **Save to Album** – Save your favorite songs to a personal album. Great for revisiting tracks or building themed playlists.
+- 🤖 **AI-Generated Summaries** – SpotOn uses Google Gemini to generate insightful song descriptions tailored from metadata—offering context, themes, and mood that help you connect with the music on a deeper level.
 - 🧭 **Navigation** – Easily return to the homepage for further searches.
 
 ## Tech Stack
