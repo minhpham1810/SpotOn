@@ -23,10 +23,11 @@ const GeminiAPI = {
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-pro-exp-02-05" });
 
             const prompt =
-`For the song "${name}" by ${artist} from the album "${album || 'Unknown'}", provide the following information in JSON format:
+`You're an AI music expert helping users explore the deeper context of songs.
+For the song "${name}" by ${artist} from the album "${album || 'Unknown'}", provide the following information in JSON format:
 
 {
-  "summary": "2-3 sentence summary focusing on theme and cultural impact",
+  "summary": "A concise 5-7 sentence overview highlighting the song’s theme, message, and any notable cultural or critical impact.",
   "genre": ["List of primary and secondary music genres"],
   "credits": [
     {

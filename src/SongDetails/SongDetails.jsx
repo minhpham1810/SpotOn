@@ -39,7 +39,7 @@ const SongDetails = ({ onAddToPlaylist }) => {
     const handleSaveToPlaylist = () => {
         try {
             onAddToPlaylist(song);
-            showToast(`Added "${song.name}" to playlist`, 'success');
+            //showToast(`Added "${song.name}" to playlist`, 'success');
         } catch (error) {
             showToast('Failed to add song to playlist', 'error');
         }

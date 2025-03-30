@@ -1,14 +1,14 @@
-# SpotOn - AI Music Companion 🎵
+## 🎯 Why SpotOn?
 
-## Why SpotOn?
+In today’s streaming era, finding music is easy. But finding music that truly **connects**—to your mood, your moment, your story—is a whole different challenge.
 
-Finding new music is easy. *Finding music that resonates with you*—your mood, your vibe, your story—isn't.  
-**SpotOn** tackles this real-world challenge by blending AI intelligence with Spotify’s massive music catalog, offering a smarter, more personal way to discover, explore, and save songs.
+**SpotOn** solves that.  
+It blends powerful **AI** with Spotify’s vast catalog to give you not just recommendations, but **relevant, emotionally resonant discoveries.** Whether you're exploring genres, curating a perfect playlist, or just chasing a vibe, SpotOn helps you go deeper into music that *gets you*.
 
-Whether you're a casual listener, a playlist perfectionist, or a curious music nerd, SpotOn gives you more than just track info—it helps you understand the song behind the sound.
+No more endless skipping. No more generic suggestions. Just music that feels *SpotOn*.
 
 ## Features
-
+- 📲 **Login with your Spoify Account** - Use your own Spotify account for **personalized search experience** and **album saving**
 - 🔍 **Search Songs** – Enter a song name in the search bar and fetch results from Spotify.
 - 📄 **Song Details Page** – Click on a song to view its details, including:
   - Song name
@@ -17,7 +17,7 @@ Whether you're a casual listener, a playlist perfectionist, or a curious music n
   - Cover Art
   - Artist
   - Song Credits
-- 💾 **Save to Album** – Save your favorite songs to a personal album. Great for revisiting tracks or building themed playlists.
+- 💾 **Save to Album** – Save your favorite songs to a personal album on **your own Spotify account**. Great for revisiting tracks or building themed playlists.
 - 🤖 **AI-Generated Summaries** – SpotOn uses Google Gemini to generate insightful song descriptions tailored from metadata—offering context, themes, and mood that help you connect with the music on a deeper level.
 - 🧭 **Navigation** – Easily return to the homepage for further searches.
 
