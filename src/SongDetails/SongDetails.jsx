@@ -103,7 +103,7 @@ const SongDetails = ({ onAddToPlaylist }) => {
                             
                             <div className={styles.Credits}>
                                 <h3>Song Credits</h3>
-                                <p><strong>Genre:</strong> {songInfo.genre.join(', ')}</p>
+                                <p><strong>Genre:</strong> {Array.isArray(songInfo.genre) ? songInfo.genre.join(', ') : 'N/A'}</p>
                                 <ul>
                                     {songInfo.credits.map((credit, index) => (
                                         <li key={index}>
