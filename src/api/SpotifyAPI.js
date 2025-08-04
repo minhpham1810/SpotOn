@@ -1,13 +1,12 @@
 const SpotifyAPI = {
     clientId: process.env.REACT_APP_SPOTIFY_CLIENT_ID,
-    clientSecret: process.env.REACT_APP_SPOTIFY_CLIENT_SECRET,
-    redirectUri: window.location.origin + "/callback",
+    redirectUri: "http://localhost:3000/callback", // Fixed redirect URI
     markets: ['US', 'GB', 'ES', 'FR', 'DE'],
 
     init() {
-        if (!this.clientId || !this.clientSecret) {
-            console.error('Missing Spotify credentials');
-            throw new Error('Spotify credentials not set in .env file');
+        if (!this.clientId) {
+            console.error('Missing Spotify client ID');
+            throw new Error('Spotify client ID not set in .env file');
         }
 
         this.accessToken = localStorage.getItem('spotify_access_token');
@@ -16,7 +15,7 @@ const SpotifyAPI = {
     },
 
     isAuthenticated() {
-        return this.accessToken && this.expiresAt && Date.now() < parseInt(this.expiresAt);
+        return !!this.accessToken && !!this.expiresAt && Date.now() < parseInt(this.expiresAt);
     },
 
     logout() {
@@ -29,7 +28,36 @@ const SpotifyAPI = {
         this.expiresAt = null;
     },
 
-    getLoginUrl() {
+    // Generate code verifier and challenge for PKCE
+    generateCodeChallenge() {
+        const codeVerifier = this.generateRandomString(128);
+        localStorage.setItem('spotify_code_verifier', codeVerifier);
+        return this.sha256(codeVerifier).then(this.base64encode);
+    },
+
+    generateRandomString(length) {
+        let text = '';
+        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for (let i = 0; i < length; i++) {
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+        }
+        return text;
+    },
+
+    async sha256(plain) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(plain);
+        return window.crypto.subtle.digest('SHA-256', data);
+    },
+
+    base64encode(arrayBuffer) {
+        return btoa(String.fromCharCode.apply(null, new Uint8Array(arrayBuffer)))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+    },
+
+    async getLoginUrl() {
         const scope = [
             'streaming',
             'user-read-email',
@@ -45,12 +73,16 @@ const SpotifyAPI = {
         const state = Math.random().toString(36).substring(7);
         localStorage.setItem('spotify_auth_state', state);
 
+        const codeChallenge = await this.generateCodeChallenge();
+
         const params = new URLSearchParams({
             client_id: this.clientId,
             response_type: 'code',
             redirect_uri: this.redirectUri,
             state: state,
             scope: scope,
+            code_challenge_method: 'S256',
+            code_challenge: codeChallenge,
             show_dialog: true
         });
 
@@ -60,18 +92,25 @@ const SpotifyAPI = {
     async handleAuthCallback(code) {
         console.log('Handling auth callback...');
 
+        const codeVerifier = localStorage.getItem('spotify_code_verifier');
+        
+        if (!codeVerifier) {
+            throw new Error('Code verifier not found');
+        }
+
         const params = new URLSearchParams({
             grant_type: 'authorization_code',
             code: code,
-            redirect_uri: this.redirectUri
+            redirect_uri: this.redirectUri,
+            client_id: this.clientId,
+            code_verifier: codeVerifier
         });
 
         try {
             const response = await fetch('https://accounts.spotify.com/api/token', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Authorization': 'Basic ' + btoa(this.clientId + ':' + this.clientSecret)
+                    'Content-Type': 'application/x-www-form-urlencoded'
                 },
                 body: params
             });
@@ -85,6 +124,11 @@ const SpotifyAPI = {
 
             console.log('Token exchange successful');
             this.setTokens(data);
+            
+            // Clean up PKCE data
+            localStorage.removeItem('spotify_code_verifier');
+            localStorage.removeItem('spotify_auth_state');
+            
             return data;
         } catch (error) {
             console.error('Auth callback error:', error);
@@ -99,15 +143,15 @@ const SpotifyAPI = {
 
         const params = new URLSearchParams({
             grant_type: 'refresh_token',
-            refresh_token: this.refreshToken
+            refresh_token: this.refreshToken,
+            client_id: this.clientId
         });
 
         try {
             const response = await fetch('https://accounts.spotify.com/api/token', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Authorization': 'Basic ' + btoa(this.clientId + ':' + this.clientSecret)
+                    'Content-Type': 'application/x-www-form-urlencoded'
                 },
                 body: params
             });

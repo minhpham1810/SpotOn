@@ -20,7 +20,7 @@ const GeminiAPI = {
             }
 
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-pro-exp-02-05" });
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
             const prompt =
 `You're an AI music expert helping users explore the deeper context of songs.

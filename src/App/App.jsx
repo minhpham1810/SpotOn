@@ -29,7 +29,18 @@ const MainContent = () => {
                 setIsAuthenticated(true);
                 setIsLoading(false);
                 return;
+            } else {
+                // try to refresh token
+                try {
+                    await SpotifyAPI.refreshAccessToken();
+                    setIsAuthenticated(true);
+                    setIsLoading(false);
+                    return;
+                } catch {
+                    console.warn("Could not refresh token, redirecting to login");
+                }
             }
+
 
             // Handle callback from Spotify
             if (location.pathname === '/callback') {

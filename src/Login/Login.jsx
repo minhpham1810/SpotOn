@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import styles from './Login.module.css';
 import SpotifyAPI from '../api/SpotifyAPI';
 
@@ -26,12 +28,29 @@ const FEATURES = [
 ];
 
 const Login = () => {
-    const handleLogin = (event) => {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        try {
+            SpotifyAPI.init();
+        } catch (e) {
+            console.error("Failed to initialize Spotify API", e);
+        }
+
+        if (SpotifyAPI.isAuthenticated()) {
+            navigate('/', { replace: true });
+        }
+    }, [navigate]);
+    const handleLogin = async (event) => {
         event.preventDefault();
         console.log('Starting Spotify login...');
-        const loginUrl = SpotifyAPI.getLoginUrl();
-        console.log('Redirecting to:', loginUrl);
-        window.location.href = loginUrl;
+        try {
+            const loginUrl = await SpotifyAPI.getLoginUrl();
+            console.log('Redirecting to:', loginUrl);
+            window.location.href = loginUrl;
+        } catch (error) {
+            console.error('Failed to generate login URL:', error);
+        }
     };
 
     return (
