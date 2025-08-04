@@ -24,7 +24,8 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Show Docker tag (debug)
-        run: echo "Image will be pushed as: ${{ secrets.DOCKERHUB_USERNAME }}/spoton:latest"
+        run: |
+          echo "Image will be pushed as: ${{ secrets.DOCKERHUB_USERNAME }}/spoton:latest"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
