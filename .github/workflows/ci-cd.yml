@@ -10,23 +10,22 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
-      # 1. Check out your repo
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 3. Build your Docker image
       - name: Build Docker image
         run: |
-          docker build -t ${{ vars.DOCKERHUB_USERNAME }}/spoton:latest .
+          docker build \
+            --build-arg REACT_APP_SPOTIFY_CLIENT_ID=${{ secrets.SPOTIFY_API_KEY }} \
+            -t ${{ vars.DOCKERHUB_USERNAME }}/spoton:latest \
+            .
 
-      # 4. Push it up
       - name: Push Docker image
         run: |
           docker push ${{ vars.DOCKERHUB_USERNAME }}/spoton:latest
