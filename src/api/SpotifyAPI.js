@@ -29,16 +29,23 @@ const SpotifyAPI = {
         this.expiresAt = null;
     },
 
+    generateRandomString(length) {
+        let text = '';
+        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for (let i = 0; i < length; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+        }
+        return text;
+    },
 
     generateCodeChallenge() {
-        // 1) Generate and store your verifier
         const codeVerifier = this.generateRandomString(128);
         localStorage.setItem('spotify_code_verifier', codeVerifier);
 
-        // 2) Hash & Base64-URL-encode
+        // Hash & base64url-encode
         const hashBuffer = sha256.arrayBuffer(codeVerifier);
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
-        const codeChallenge = base64
+        const b64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+        const codeChallenge = b64
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '');
@@ -47,25 +54,40 @@ const SpotifyAPI = {
     },
 
     async getLoginUrl() {
-        const scope = [ /* … your scopes … */ ].join(' ');
+        if (!this.clientId) {
+        throw new Error('Missing Spotify client ID');
+        }
+
+        const scope = [
+        'streaming',
+        'user-read-email',
+        'user-read-private',
+        'user-library-read',
+        'user-library-modify',
+        'playlist-modify-public',
+        'playlist-modify-private',
+        'user-read-playback-state',
+        'user-modify-playback-state'
+        ].join(' ');
+
         const state = Math.random().toString(36).substring(2);
         localStorage.setItem('spotify_auth_state', state);
 
-        // **Sync** PKCE code challenge instead of async window.crypto
+        // ← use the new sync generator
         const codeChallenge = this.generateCodeChallenge();
 
         const params = new URLSearchParams({
         client_id: this.clientId,
         response_type: 'code',
         redirect_uri: this.redirectUri,
-        state,
-        scope,
+        state: state,
+        scope: scope,
         code_challenge_method: 'S256',
         code_challenge: codeChallenge,
         show_dialog: true
         });
 
-        return `https://accounts.spotify.com/authorize?${params}`;
+        return `https://accounts.spotify.com/authorize?${params.toString()}`;
     },
 
     async handleAuthCallback(code) {
