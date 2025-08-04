@@ -1,0 +1,7 @@
+version: "3"
+services:
+  spoton:
+    image: minhpham1810/spoton:latest
+    ports:
+      - "80:80"
+    restart: always
