@@ -1,7 +1,7 @@
 import { sha256 } from 'js-sha256';  
 const SpotifyAPI = {
     clientId: process.env.REACT_APP_SPOTIFY_CLIENT_ID,
-    redirectUri: "http://localhost:3000/callback", // Fixed redirect URI
+    redirectUri: "http://spoton.us-east-2.elasticbeanstalk.com/callback", // Fixed redirect URI
     markets: ['US', 'GB', 'ES', 'FR', 'DE'],
 
     init() {
