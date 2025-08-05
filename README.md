@@ -44,7 +44,7 @@ No more generic recommendations. Just music that feels **SpotOn**.
 ### 🧠 AI & APIs  
 - **Spotify Web API**  
 - **Google Gemini API**
-- 
+  
 
 ### 🔐 Backend Architecture  
 *(Bundled within Docker container)*  
