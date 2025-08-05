@@ -23,6 +23,7 @@ jobs:
           docker build \
             --build-arg REACT_APP_SPOTIFY_CLIENT_ID=${{ secrets.SPOTIFY_CLIENT_ID }} \
             --build-arg REACT_APP_SPOTIFY_REDIRECT_URI=${{ secrets.SPOTIFY_REDIRECT_URI }} \
+            --build-arg REACT_APP_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
             -t ${{ secrets.DOCKERHUB_USERNAME }}/spoton:latest \
             .
 
