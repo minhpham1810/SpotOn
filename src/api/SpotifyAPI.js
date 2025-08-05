@@ -42,7 +42,6 @@ const SpotifyAPI = {
         const codeVerifier = this.generateRandomString(128);
         localStorage.setItem('spotify_code_verifier', codeVerifier);
 
-        // Hash & base64url-encode
         const hashBuffer = sha256.arrayBuffer(codeVerifier);
         const b64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
         const codeChallenge = b64
@@ -73,7 +72,6 @@ const SpotifyAPI = {
         const state = Math.random().toString(36).substring(2);
         localStorage.setItem('spotify_auth_state', state);
 
-        // ← use the new sync generator
         const codeChallenge = this.generateCodeChallenge();
 
         const params = new URLSearchParams({
