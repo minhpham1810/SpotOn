@@ -1,4 +1,5 @@
 /* Login.module.css */
+
 .Login {
     min-height: 100vh;
     display: flex;
@@ -30,6 +31,8 @@
     position: relative;
     z-index: 1;
     animation: fadeIn 0.8s ease-out;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .Logo {
@@ -164,4 +167,13 @@
         width: 100%;
         justify-content: center;
     }
+}
+.Header {
+    width: 100%;
+    color: rgb(183, 168, 168);
+    font-size: 1.0rem;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 0.5px;
+    z-index: 2;
 }

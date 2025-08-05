@@ -55,6 +55,9 @@ const Login = () => {
 
     return (
         <div className={styles.Login}>
+            <div className={styles.Header}>
+                Made by Minh Pham
+            </div>
             <div className={styles.Container}>
                 <div className={styles.Logo}>🎵</div>
                 <h1 className={styles.Title}>Welcome to SpotOn</h1>
@@ -82,6 +85,7 @@ const Login = () => {
                     Connect with Spotify
                 </button>
             </div>
+
         </div>
     );
 };
