@@ -1,15 +1,14 @@
 // App.jsx
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import SearchBar from '../SearchBar/SearchBar';
-import SearchResults from '../SearchResults/SearchResults';
-import Playlist from '../Playlist/Playlist';
-import SongDetails from '../SongDetails/SongDetails';
-import Login from '../Login/Login';
-import LoadingSpinner from '../components/LoadingSpinner/LoadingSpinner';
-import { ToastProvider, useToast } from '../contexts/ToastContext';
-import styles from './App.module.css';
-import SpotifyAPI from '../api/SpotifyAPI';
+import SearchBar from './SearchBar';
+import SearchResults from './SearchResults';
+import Playlist from './Playlist';
+import SongDetails from './SongDetails';
+import Login from './Login';
+import LoadingSpinner from './LoadingSpinner';
+import { ToastProvider, useToast } from './contexts/ToastContext';
+import SpotifyAPI from './api/SpotifyAPI';
 
 const MainContent = () => {
     const navigate = useNavigate();
@@ -40,7 +39,6 @@ const MainContent = () => {
                     console.warn("Could not refresh token, redirecting to login");
                 }
             }
-
 
             // Handle callback from Spotify
             if (location.pathname === '/callback') {
@@ -137,7 +135,7 @@ const MainContent = () => {
 
     if (isLoading) {
         return (
-            <div className={styles.LoadingContainer}>
+            <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-b from-background to-background-elevated z-50">
                 <LoadingSpinner size="large" />
             </div>
         );
@@ -148,12 +146,13 @@ const MainContent = () => {
     }
 
     return (
-        <div className={styles.App}>
+        <div className="min-h-screen p-5 text-center font-sans text-white bg-gradient-to-b from-background to-background-elevated relative">
+            <div className="absolute inset-x-0 top-0 h-[300px] bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
             {!isAuthenticated ? (
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/callback" element={
-                        <div className={styles.LoadingContainer}>
+                        <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-b from-background to-background-elevated z-50">
                             <LoadingSpinner size="large" />
                         </div>
                     } />
@@ -161,10 +160,10 @@ const MainContent = () => {
                 </Routes>
             ) : (
                 <>
-                    <header className={styles.Header}>
-                        <h1>SpotOn</h1>
+                    <header className="max-w-[1200px] mx-auto mb-8 p-4 flex justify-between items-center bg-surface-lighter backdrop-blur-md rounded-xl border border-border relative z-10 animate-slideDown md:flex-row md:text-left md:gap-0 flex-col gap-4 text-center">
+                        <h1 className="m-0 text-white text-3xl font-bold flex items-center gap-2 before:content-['🎵'] before:text-[1.8rem]">SpotOn</h1>
                         <button
-                            className={styles.LogoutButton}
+                            className="border-2 border-white/20 text-white px-5 py-2.5 rounded-full text-sm font-semibold cursor-pointer transition-all duration-normal flex items-center gap-2 hover:bg-white/10 hover:border-white/30 hover:-translate-y-0.5 before:content-['👋'] before:text-lg md:w-auto w-full justify-center"
                             onClick={handleLogout}
                         >
                             Logout
@@ -173,7 +172,7 @@ const MainContent = () => {
                     <SearchBar onSearch={searchSpotify} />
                     <Routes>
                         <Route path="/" element={
-                            <div className={styles.mainContainer}>
+                            <div className="max-w-[1200px] mx-auto mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 px-4 animate-fadeIn">
                                 <SearchResults
                                     searchResults={searchResults}
                                     onAddTrack={addToPlaylist}

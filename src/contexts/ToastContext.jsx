@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import Toast from '../components/Toast/Toast';
-import styles from '../components/Toast/Toast.module.css';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import Toast, { ToastContainer } from '../Toast';
 
 const ToastContext = createContext(null);
 
@@ -22,7 +21,7 @@ export const ToastProvider = ({ children }) => {
     return (
         <ToastContext.Provider value={{ showToast }}>
             {children}
-            <div className={styles.ToastContainer}>
+            <ToastContainer>
                 {sortedToasts.map((toast, index) => (
                     <Toast
                         key={toast.id}
@@ -36,7 +35,7 @@ export const ToastProvider = ({ children }) => {
                         }}
                     />
                 ))}
-            </div>
+            </ToastContainer>
         </ToastContext.Provider>
     );
 };

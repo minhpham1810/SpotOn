@@ -23,21 +23,37 @@ const GeminiAPI = {
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
             const prompt =
-`You're an AI music expert helping users explore the deeper context of songs.
-For the song "${name}" by ${artist} from the album "${album || 'Unknown'}", provide the following information in JSON format:
+`As a passionate music historian and critic with deep expertise in musical analysis, provide an engaging deep-dive into "${name}" by ${artist} from the album "${album || 'Unknown'}". Structure your response in this JSON format:
 
 {
-  "summary": "A concise 5-7 sentence overview highlighting the song’s theme, message, and any notable cultural or critical impact.",
-  "genre": ["List of primary and secondary music genres"],
+  "summary": "Write an engaging 4-5 sentence narrative that captures the song's essence, emotional impact, and cultural significance. Use vivid language and specific details to paint a picture of the song's unique character.",
+  
+  "musicalAnalysis": {
+    "mood": "Describe the emotional atmosphere using 2-3 evocative adjectives",
+    "keyElements": ["List 3-4 standout musical elements like memorable riffs, vocal harmonies, or production techniques"],
+    "soundscape": "One sentence describing the overall sonic texture and production style"
+  },
+  
+  "genre": ["List primary and secondary genres, including any innovative fusion elements"],
+  
+  "culturalContext": {
+    "era": "Identify the musical era and cultural moment",
+    "influence": "Briefly describe the song's impact on music or popular culture",
+    "connections": ["List 2-3 songs or artists that share similar styles or themes"]
+  },
+  
   "credits": [
     {
       "name": "Name of contributor",
-      "role": "Their role (e.g., songwriter, producer, featured artist)"
+      "role": "Their specific role with additional context about their contribution",
+      "knownFor": "A notable fact about this contributor's career or other significant work"
     }
-  ]
+  ],
+  
+  "highlights": ["List 3-4 most memorable or distinctive aspects of the song that make it stand out"]
 }
 
-Focus on accuracy and be specific about genres and roles. Include at least the primary artist and any key contributors.`;
+Be bold and specific in your analysis. Focus on what makes this song unique and memorable. Include interesting details that would engage music enthusiasts while remaining accessible to casual listeners.`;
 
             console.log('Making request to Gemini API...');
             

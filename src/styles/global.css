@@ -1,145 +1,91 @@
-/* Global styles and CSS variables */
-:root {
-    /* Colors */
-    --primary: #1DB954;
-    --primary-light: #1ed760;
-    --primary-dark: #1aa34a;
-    
-    --background: #121212;
-    --background-elevated: #282828;
-    
-    --text-primary: #FFFFFF;
-    --text-secondary: rgba(255, 255, 255, 0.7);
-    --text-tertiary: rgba(255, 255, 255, 0.5);
-    
-    --surface-light: rgba(255, 255, 255, 0.1);
-    --surface-lighter: rgba(255, 255, 255, 0.05);
-    
-    --border: rgba(255, 255, 255, 0.1);
-    
-    /* Shadows */
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.2);
-    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
-    
-    /* Transitions */
-    --transition-fast: 0.2s ease;
-    --transition-normal: 0.3s ease;
-    --transition-slow: 0.5s ease;
-    
-    /* Border Radius */
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 20px;
-    --radius-full: 9999px;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Base styles */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: var(--background);
-    color: var(--text-primary);
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-/* Scrollbar styling */
+/* Custom scrollbar styling */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    @apply w-2 h-2;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--surface-lighter);
-    border-radius: var(--radius-sm);
+    @apply bg-surface-lighter rounded-full;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--surface-light);
-    border-radius: var(--radius-sm);
+    @apply bg-surface-light rounded-full transition-colors duration-300;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--text-tertiary);
+    @apply bg-primary/30;
 }
 
-/* Common animations */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
+/* Hide scrollbar for mobile devices */
+@media (max-width: 768px) {
+    ::-webkit-scrollbar {
+        @apply w-0 h-0;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(-20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 0.3; }
-    100% { opacity: 0.6; }
-}
-
-/* Utility classes */
-.fadeIn {
-    animation: fadeIn 0.3s ease forwards;
-}
-
-.slideIn {
-    animation: slideIn 0.3s ease forwards;
-}
-
-.pulse {
-    animation: pulse 1.5s infinite;
 }
 
 /* Focus styles */
 :focus {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
+    @apply outline-none ring-2 ring-primary ring-offset-1 ring-offset-background
+           transition-shadow duration-200;
 }
 
 :focus:not(:focus-visible) {
-    outline: none;
+    @apply ring-0 ring-offset-0;
 }
 
-/* Button reset */
-button {
-    background: none;
-    border: none;
-    padding: 0;
-    font: inherit;
-    cursor: pointer;
-    outline: inherit;
+/* Keyboard focus styles */
+:focus-visible {
+    @apply ring-2 ring-primary ring-offset-2 ring-offset-background
+           outline-none transition-shadow duration-200;
 }
 
-/* Links */
-a {
-    color: var(--primary);
-    text-decoration: none;
-    transition: color var(--transition-fast);
-}
+/* Base styles */
+@layer base {
+    /* Base styles */
+    body {
+        @apply bg-background text-text-primary font-sans antialiased min-h-screen
+               selection:bg-primary/20 selection:text-white;
+    }
 
-a:hover {
-    color: var(--primary-light);
+    /* Interactive elements */
+    button {
+        @apply bg-transparent border-0 p-0 cursor-pointer transition-all duration-300
+               hover:scale-[1.02] active:scale-100 disabled:opacity-50
+               disabled:cursor-not-allowed disabled:hover:scale-100;
+    }
+
+    /* Links */
+    a {
+        @apply text-primary no-underline transition-all duration-300
+               hover:text-primary-light focus-visible:text-primary-light
+               relative after:absolute after:bottom-0 after:left-0 after:w-0
+               after:h-px after:bg-primary after:transition-all after:duration-300
+               hover:after:w-full;
+    }
+
+    /* Text selection */
+    ::selection {
+        @apply bg-primary/20 text-white;
+    }
+
+    /* Smooth scrolling */
+    html {
+        @apply scroll-smooth;
+    }
+
+    /* Responsive typography */
+    @screen md {
+        html {
+            @apply text-[16px];
+        }
+    }
+
+    @screen lg {
+        html {
+            @apply text-[18px];
+        }
+    }
 }
