@@ -161,7 +161,20 @@ const MainContent = () => {
             ) : (
                 <>
                     <header className="max-w-[1200px] mx-auto mb-8 p-4 flex justify-between items-center bg-surface-lighter backdrop-blur-md rounded-xl border border-border relative z-10 animate-slideDown md:flex-row md:text-left md:gap-0 flex-col gap-4 text-center">
-                        <h1 className="m-0 text-white text-3xl font-bold flex items-center gap-2 before:content-['🎵'] before:text-[1.8rem]">SpotOn</h1>
+                        <h1
+                            className="m-0 text-4xl md:text-5xl font-extrabold flex items-center gap-3 tracking-tight"
+                            aria-label="SpotOn Music App"
+                        >
+                            <span
+                                className="text-[2rem] md:text-[2.2rem] animate-bounce"
+                                aria-hidden="true"
+                            >
+                                🎵
+                            </span>
+                            <span className="bg-gradient-to-r from-white to-primary-light bg-clip-text text-transparent drop-shadow-lg">
+                                SpotOn
+                            </span>
+                        </h1>
                         <button
                             className="border-2 border-white/20 text-white px-5 py-2.5 rounded-full text-sm font-semibold cursor-pointer transition-all duration-normal flex items-center gap-2 hover:bg-white/10 hover:border-white/30 hover:-translate-y-0.5 before:content-['👋'] before:text-lg md:w-auto w-full justify-center"
                             onClick={handleLogout}

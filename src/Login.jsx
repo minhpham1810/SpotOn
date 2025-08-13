@@ -54,12 +54,6 @@ const Login = () => {
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-gradient-to-br from-background to-background-elevated relative overflow-hidden">
-            {/* Enhanced background gradients */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(29,185,84,0.15)_0%,transparent_70%)] animate-pulse" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(29,185,84,0.1)_0%,transparent_50%)] animate-pulse [animation-delay:1s]" />
-                <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,rgba(29,185,84,0.1)_0%,transparent_25%,transparent_100%)] animate-spin-slow" />
-            </div>
 
             {/* Header */}
             <div className="w-full text-[#b7a8a8] text-base font-semibold text-center tracking-wider z-10">
