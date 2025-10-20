@@ -67,9 +67,19 @@ Be bold and specific in your analysis. Focus on what makes this song unique and 
         throw new Error("Failed to parse Gemini API response");
       }
 
-      const songInfo = JSON.parse(jsonMatch[0]);
-      console.log("Generated song info:", songInfo);
-      return songInfo;
+      const jsonString = jsonMatch[0];
+
+      // Validate JSON before parsing
+      try {
+        const songInfo = JSON.parse(jsonString);
+        console.log("Generated song info:", songInfo);
+        return songInfo;
+      } catch (jsonError) {
+        console.error("Error parsing JSON:", jsonError);
+        throw new Error(
+          `Invalid JSON format in Gemini API response: ${jsonError.message}`
+        );
+      }
     } catch (error) {
       console.error("Error generating summary:", error);
       return `Unable to generate song summary: ${error.message}`;
