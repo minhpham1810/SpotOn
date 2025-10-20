@@ -28,7 +28,7 @@ No more generic recommendations. Just music that feels **SpotOn**.
 - **🧭 Intuitive Navigation** – Smooth transitions between views using React Router
 
 ---
-
+https://github.com/user-attachments/assets/16891384-79aa-47c3-94ad-b066b5e50ccd
 ## 🛠 Tech Stack
 
 ### 🚀 Deployment
