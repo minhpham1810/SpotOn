@@ -4,8 +4,7 @@ const SpotifyAPI = {
   redirectUri:
     window.location.hostname === "localhost"
       ? "http://localhost:3000/callback"
-      : "http://spoton.us-east-2.elasticbeanstalk.com/callback",
-  markets: ["US", "GB", "ES", "FR", "DE"],
+      : "https://spot-on-six.vercel.app/callback",
   markets: ["US", "GB", "ES", "FR", "DE"],
 
   init() {

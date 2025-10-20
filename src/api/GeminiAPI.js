@@ -1,29 +1,30 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const GeminiAPI = {
-    getApiKey() {
-        const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
-        if (!apiKey) {
-            console.error('REACT_APP_GEMINI_API_KEY is not set in environment');
-            return null;
-        }
-        return apiKey;
-    },
+  getApiKey() {
+    const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("REACT_APP_GEMINI_API_KEY is not set in environment");
+      return null;
+    }
+    return apiKey;
+  },
 
-    async generateSongInfo({ name, artist, album }) {
-        try {
-            console.log('Generating summary for:', name, 'by', artist);
-            const apiKey = this.getApiKey();
+  async generateSongInfo({ name, artist, album }) {
+    try {
+      console.log("Generating summary for:", name, "by", artist);
+      const apiKey = this.getApiKey();
 
-            if (!apiKey) {
-                throw new Error('Gemini API key is not configured');
-            }
+      if (!apiKey) {
+        throw new Error("Gemini API key is not configured");
+      }
 
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-            const prompt =
-`As a passionate music historian and critic with deep expertise in musical analysis, provide an engaging deep-dive into "${name}" by ${artist} from the album "${album || 'Unknown'}". Structure your response in this JSON format:
+      const prompt = `As a passionate music historian and critic with deep expertise in musical analysis, provide an engaging deep-dive into "${name}" by ${artist} from the album "${
+        album || "Unknown"
+      }". Structure your response in this JSON format:
 
 {
   "summary": "Write an engaging 4-5 sentence narrative that captures the song's essence, emotional impact, and cultural significance. Use vivid language and specific details to paint a picture of the song's unique character.",
@@ -55,26 +56,25 @@ const GeminiAPI = {
 
 Be bold and specific in your analysis. Focus on what makes this song unique and memorable. Include interesting details that would engage music enthusiasts while remaining accessible to casual listeners.`;
 
-            console.log('Making request to Gemini API...');
-            
-            const result = await model.generateContent(prompt);
-            const text = result.response.text();
-            
-            // Extract JSON from the response
-            const jsonMatch = text.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) {
-                throw new Error('Failed to parse Gemini API response');
-            }
+      console.log("Making request to Gemini API...");
 
-            const songInfo = JSON.parse(jsonMatch[0]);
-            console.log('Generated song info:', songInfo);
-            return songInfo;
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
 
-        } catch (error) {
-            console.error('Error generating summary:', error);
-            return `Unable to generate song summary: ${error.message}`;
-        }
+      // Extract JSON from the response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("Failed to parse Gemini API response");
+      }
+
+      const songInfo = JSON.parse(jsonMatch[0]);
+      console.log("Generated song info:", songInfo);
+      return songInfo;
+    } catch (error) {
+      console.error("Error generating summary:", error);
+      return `Unable to generate song summary: ${error.message}`;
     }
+  },
 };
 
 export default GeminiAPI;
