@@ -2,8 +2,8 @@ import { sha256 } from "js-sha256";
 const SpotifyAPI = {
   clientId: process.env.REACT_APP_SPOTIFY_CLIENT_ID,
   redirectUri:
-    window.location.hostname === "localhost"
-      ? "http://localhost:3000/callback"
+    window.location.hostname === "127.0.0.1"
+      ? "https://127.0.0.1:3000/callback"
       : "https://spot-on-six.vercel.app/callback",
   markets: ["US", "GB", "ES", "FR", "DE"],
 

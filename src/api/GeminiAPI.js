@@ -10,7 +10,15 @@ const GeminiAPI = {
     return apiKey;
   },
 
-  async generateSongInfo({ name, artist, album }) {
+  parseRetryDelay(error) {
+    try {
+      const match = error.message?.match(/Please retry in ([\d.]+)s/);
+      if (match) return Math.ceil(parseFloat(match[1])) * 1000;
+    } catch {}
+    return null;
+  },
+
+  async generateSongInfo({ name, artist, album }, retryCount = 0) {
     try {
       console.log("Generating summary for:", name, "by", artist);
       const apiKey = this.getApiKey();
@@ -20,7 +28,7 @@ const GeminiAPI = {
       }
 
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
       const prompt = `As a passionate music historian and critic with deep expertise in musical analysis, provide an engaging deep-dive into "${name}" by ${artist} from the album "${
         album || "Unknown"
@@ -81,7 +89,17 @@ Be bold and specific in your analysis. Focus on what makes this song unique and 
         );
       }
     } catch (error) {
+      const is429 = error.message?.includes("429");
+      if (is429 && retryCount < 2) {
+        const delay = this.parseRetryDelay(error) ?? 20000;
+        console.log(`Rate limited. Retrying in ${delay / 1000}s...`);
+        await new Promise((res) => setTimeout(res, delay));
+        return this.generateSongInfo({ name, artist, album }, retryCount + 1);
+      }
       console.error("Error generating summary:", error);
+      if (is429) {
+        return `Gemini API quota exceeded. Please wait a moment and try again.`;
+      }
       return `Unable to generate song summary: ${error.message}`;
     }
   },
