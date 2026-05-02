@@ -34,7 +34,7 @@ const SearchBar = ({ onSearch }) => {
         setIsLoading(false);
       }
     },
-    [onSearch, updateRecentSearches]
+    [onSearch]
   );
 
   // Memoize the debounced version
