@@ -99,58 +99,54 @@ const Track = ({ track, onAdd, onRemove, isInPlaylist = false }) => {
     return (
         <div
             onClick={handleTrackClick}
-            className="p-4 md:p-3 rounded-lg bg-white/5 mb-3 flex items-center gap-4
+            className="p-3 rounded-lg bg-white/[0.04] mb-2.5 flex items-center gap-4
                      transition-all duration-300 cursor-pointer relative overflow-hidden
-                     hover:-translate-y-1 hover:bg-white/[0.08]
-                     hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]
-                     animate-fadeIn
+                     hover:-translate-y-0.5 hover:bg-white/[0.07]
+                     hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]
+                     animate-fadeIn active:translate-y-0
                      before:content-[''] before:absolute before:inset-0
-                     before:bg-gradient-to-r before:from-transparent before:to-primary/10
+                     before:bg-gradient-to-r before:from-transparent before:to-primary/8
                      before:opacity-0 before:transition-all before:duration-300
-                     hover:before:opacity-100 active:translate-y-0
-                     after:absolute after:inset-0 after:bg-shimmer after:animate-shimmer
-                     after:opacity-0 hover:after:opacity-20
-                     group backdrop-blur-[2px]"
+                     hover:before:opacity-100
+                     group"
         >
-            <img 
-                src={track.cover} 
-                alt={`${track.name} cover`} 
-                className="w-[50px] h-[50px] md:w-10 md:h-10 rounded-lg object-cover
-                          shadow-lg transition-all duration-300 group-hover:scale-105
-                          group-hover:shadow-xl group-hover:shadow-primary/10
-                          group-hover:rotate-2 relative z-10
-                          animate-fadeIn [animation-delay:200ms]"
-            />
-            <div className="flex-grow text-left flex flex-col gap-0.5">
-                <h3 className="m-0 text-white text-lg font-semibold transition-all duration-300
-                              group-hover:text-primary group-hover:translate-x-1">
+            {/* Album art with ambient glow */}
+            <div className="relative flex-shrink-0">
+                <img
+                    src={track.cover}
+                    alt={`${track.name} cover`}
+                    className="w-16 h-16 rounded-md object-cover
+                              shadow-lg transition-all duration-300
+                              group-hover:scale-105 relative z-10"
+                />
+                <div className="absolute inset-0 rounded-md bg-primary/0 group-hover:bg-primary/10
+                               blur-md scale-110 transition-all duration-300 group-hover:blur-lg" />
+            </div>
+
+            <div className="flex-grow text-left flex flex-col gap-0.5 min-w-0">
+                <h3 className="m-0 text-white font-semibold text-sm transition-colors duration-300
+                              group-hover:text-primary truncate"
+                    style={{ fontFamily: 'Syne, sans-serif' }}>
                     {track.name}
                 </h3>
-                <p className="m-0 text-white/70 text-sm transition-all duration-300
-                              group-hover:text-white/90 group-hover:translate-x-1">
-                    {track.artist} • {track.album}
+                <p className="m-0 text-white/40 transition-colors duration-300
+                              group-hover:text-white/60 truncate"
+                   style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                    {track.artist}
                 </p>
                 {!track.preview_url && (
-                    <span className="inline-block text-xs text-white/50 italic bg-white/5 
-                                   px-2 py-0.5 rounded mt-0.5 md:text-[0.75rem] md:px-1.5 md:py-0.5">
-                        No preview available
+                    <span className="inline-block text-[10px] text-white/30 italic mt-0.5">
+                        No preview
                     </span>
                 )}
             </div>
-            <div className="flex gap-2 opacity-0 translate-x-2.5 transition-all duration-300 
+
+            <div className="flex gap-2 flex-shrink-0 opacity-0 translate-x-2 transition-all duration-300
                           group-hover:opacity-100 group-hover:translate-x-0 md:opacity-100 md:translate-x-0">
                 {track.preview_url && hasAudioSupport && (
                     <button
-                        className={`${baseButtonClasses} bg-primary/10 border-primary/60
-                                   enabled:hover:bg-primary enabled:hover:border-primary
-                                   enabled:hover:text-white/90 relative
-                                   before:content-[''] before:w-3.5 before:h-3.5
-                                   before:border-2 before:border-white/20 before:border-t-white
-                                   before:rounded-full before:animate-spin disabled:before:block
-                                   group-hover:enabled:translate-x-0.5
-                                   after:absolute after:inset-0 after:bg-shimmer
-                                   after:animate-shimmer after:opacity-0
-                                   enabled:hover:after:opacity-30`}
+                        className={`${baseButtonClasses} bg-primary/10 border-primary/50
+                                   enabled:hover:bg-primary enabled:hover:border-primary`}
                         onClick={handlePlayPause}
                         disabled={isLoading}
                         title={isPlaying ? 'Pause preview' : 'Play preview'}
@@ -159,12 +155,10 @@ const Track = ({ track, onAdd, onRemove, isInPlaylist = false }) => {
                     </button>
                 )}
                 <button
-                    className={`${baseButtonClasses} 
+                    className={`${baseButtonClasses} text-base
                               ${isInPlaylist
-                                ? 'enabled:hover:bg-red-500/90 enabled:hover:border-red-500 enabled:hover:rotate-90'
-                                : 'enabled:hover:bg-primary/90 enabled:hover:border-primary enabled:hover:-rotate-12'}
-                              relative after:absolute after:inset-0 after:bg-shimmer
-                              after:animate-shimmer after:opacity-0 enabled:hover:after:opacity-30`}
+                                ? 'border-white/20 enabled:hover:bg-red-500/80 enabled:hover:border-red-500 enabled:hover:rotate-45'
+                                : 'border-white/20 enabled:hover:bg-primary/80 enabled:hover:border-primary'}`}
                     onClick={handleAction}
                     title={isInPlaylist ? 'Remove from playlist' : 'Add to playlist'}
                 >

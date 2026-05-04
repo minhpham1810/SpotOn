@@ -160,28 +160,30 @@ const MainContent = () => {
                 </Routes>
             ) : (
                 <>
-                    <header className="max-w-[1200px] mx-auto mb-8 p-4 flex justify-between items-center bg-surface-lighter backdrop-blur-md rounded-xl border border-border relative z-10 animate-slideDown md:flex-row md:text-left md:gap-0 flex-col gap-4 text-center">
+                    <header className="max-w-[1200px] mx-auto mb-0 px-4 pt-6 pb-4 flex justify-between items-center relative z-10 md:flex-row md:gap-0 flex-col gap-4">
                         <h1
-                            className="m-0 text-4xl md:text-5xl font-extrabold flex items-center gap-3 tracking-tight"
+                            className="m-0 flex items-baseline gap-0 tracking-tight"
                             aria-label="SpotOn Music App"
+                            style={{ fontFamily: 'Syne, sans-serif' }}
                         >
-                            <span
-                                className="text-[2rem] md:text-[2.2rem] animate-bounce"
-                                aria-hidden="true"
-                            >
-                                🎵
+                            <span className="text-3xl md:text-4xl font-extrabold text-white uppercase tracking-wide">
+                                Spot
                             </span>
-                            <span className="bg-gradient-to-r from-white to-primary-light bg-clip-text text-transparent drop-shadow-lg">
-                                SpotOn
+                            <span className="text-3xl md:text-4xl font-extrabold text-primary uppercase tracking-wide">
+                                On
                             </span>
                         </h1>
                         <button
-                            className="border-2 border-white/20 text-white px-5 py-2.5 rounded-full text-sm font-semibold cursor-pointer transition-all duration-normal flex items-center gap-2 hover:bg-white/10 hover:border-white/30 hover:-translate-y-0.5 before:content-['👋'] before:text-lg md:w-auto w-full justify-center"
+                            className="text-white/40 text-sm cursor-pointer transition-all duration-300 hover:text-white relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-px after:bg-white after:transition-all after:duration-300 hover:after:w-full md:w-auto w-full"
+                            style={{ fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.05em' }}
                             onClick={handleLogout}
                         >
-                            Logout
+                            logout
                         </button>
                     </header>
+                    <div className="max-w-[1200px] mx-auto mb-8 px-4">
+                        <div className="h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+                    </div>
                     <SearchBar onSearch={searchSpotify} />
                     <Routes>
                         <Route path="/" element={

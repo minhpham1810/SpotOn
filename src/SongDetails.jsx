@@ -77,255 +77,215 @@ const SongDetails = ({ onAddToPlaylist }) => {
     };
 
     return (
-        <div className="max-w-[1200px] mx-auto p-8 min-h-screen flex flex-col">
+        <div className="max-w-[1200px] mx-auto p-6 md:p-8 min-h-screen flex flex-col">
+            {/* Back button */}
             <button
-                className="bg-transparent border-2 border-spotify-green text-spotify-green px-6 py-3
-                          rounded-full font-semibold transition-all duration-300 mb-8 flex items-center
-                          gap-2 w-fit hover:bg-spotify-green hover:text-white transform
-                          hover:-translate-x-2 hover:shadow-lg hover:shadow-spotify-green/20
-                          active:translate-x-0 active:shadow-md
-                          before:content-['←'] before:transition-transform before:duration-300
-                          hover:before:-translate-x-1 group"
+                className="text-white/40 text-sm cursor-pointer transition-all duration-300 mb-8 flex items-center
+                          gap-2 w-fit hover:text-white group"
+                style={{ fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.05em' }}
                 onClick={() => navigate('/')}
             >
-                <span className="transition-transform duration-300 group-hover:translate-x-1">
-                    Back to Homepage
-                </span>
+                <span className="transition-transform duration-300 group-hover:-translate-x-1">←</span>
+                <span>Back</span>
             </button>
-            <div className="grid grid-cols-1 md:grid-cols-[350px_1fr] gap-8 mb-8 animate-fadeIn h-[calc(100vh-160px)]">
+
+            <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8 mb-8 animate-fadeIn">
+                {/* Left column: Hero */}
                 <div className="flex flex-col gap-6 md:items-start items-center">
-                    <div className="relative group">
+                    {/* Album art with ambient glow */}
+                    <div className="relative w-full max-w-[280px] md:max-w-none">
                         <img
-                            className="w-full max-w-[300px] md:max-w-none aspect-square rounded-lg
-                                     object-cover shadow-xl transition-all duration-300
-                                     group-hover:scale-[1.02] group-hover:shadow-2xl
-                                     group-hover:shadow-spotify-green/20 z-10 relative"
+                            className="w-full aspect-square rounded-lg object-cover shadow-2xl relative z-10"
                             src={song.cover}
                             alt={song.name}
                         />
-                        <div className="absolute inset-0 bg-spotify-green/20 rounded-lg blur-xl
-                                     transition-all duration-300 opacity-0 group-hover:opacity-100
-                                     transform group-hover:scale-110" />
+                        {/* Ambient glow — blurred duplicate */}
+                        <img
+                            className="absolute inset-0 w-full h-full object-cover rounded-lg blur-3xl opacity-25 scale-110 -z-0"
+                            src={song.cover}
+                            alt=""
+                            aria-hidden="true"
+                        />
                     </div>
-                    <div className="text-white bg-white/5 rounded-xl border border-white/10 p-6 w-full
-                                  transition-all duration-300 hover:bg-white/10 hover:border-white/20
-                                  hover:shadow-lg hover:shadow-spotify-green/10">
-                        <h2 className="text-2xl font-bold mb-4">{song.name}</h2>
-                        <p className="my-2 text-lg text-white/80"><strong>Artist:</strong> {song.artist}</p>
-                        <p className="my-2 text-lg text-white/80"><strong>Album:</strong> {song.album}</p>
-                        <p className="my-2 text-lg text-white/80"><strong>Release Date:</strong> {formatDate(song.releaseDate)}</p>
-                    </div>
-                </div>
-                <div className="overflow-y-auto pr-4 flex flex-col gap-6">
-                    {isLoadingInfo ? (
-                        <div className="my-8 p-8 bg-white/5 rounded-xl border border-white/10 flex flex-col items-center gap-4 animate-fadeIn">
-                            <LoadingSpinner size="small" />
-                            <p className="text-white/70 text-lg italic text-center animate-pulse">Gathering song info...</p>
+
+                    {/* Song info card */}
+                    <div className="w-full text-left">
+                        <h2 className="text-2xl font-bold text-white m-0 mb-1 leading-tight"
+                            style={{ fontFamily: 'Syne, sans-serif' }}>
+                            {song.name}
+                        </h2>
+                        <p className="m-0 mb-4 text-white/40"
+                           style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                            {song.artist}
+                        </p>
+                        <div className="space-y-1.5 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                            <p className="text-white/50 m-0">
+                                <span className="text-white/20 text-[10px] uppercase tracking-widest mr-2">Album</span>
+                                {song.album}
+                            </p>
+                            <p className="text-white/50 m-0">
+                                <span className="text-white/20 text-[10px] uppercase tracking-widest mr-2">Released</span>
+                                {formatDate(song.releaseDate)}
+                            </p>
                         </div>
-                    ) : (
-                        <>
-                            {songInfo ? (
-                                <div className="space-y-6">
-                                    {/* About Section */}
-                                    <div className="p-6 bg-white/5 rounded-xl border border-white/10
-                                                  hover:bg-white/10 hover:border-spotify-green/30
-                                                  hover:shadow-lg hover:shadow-spotify-green/10
-                                                  transition-all duration-300 group">
-                                        <h3 className="text-spotify-green text-xl mb-4 flex items-center gap-2
-                                                     before:content-['✨'] before:transition-transform
-                                                     before:duration-300 group-hover:before:rotate-[15deg]">
-                                            About this Song
-                                        </h3>
-                                        <p className="text-white/90 leading-relaxed">{songInfo.summary}</p>
-                                    </div>
+                    </div>
 
-                                    {/* Musical Analysis */}
-                                    {songInfo.musicalAnalysis && (
-                                        <div className="p-6 bg-white/5 rounded-xl border border-white/10
-                                                      hover:bg-white/10 hover:border-spotify-green/30
-                                                      hover:shadow-lg hover:shadow-spotify-green/10
-                                                      transition-all duration-300 group animate-fadeIn">
-                                            <h3 className="text-spotify-green text-xl mb-6 flex items-center gap-2
-                                                         before:content-['🎼'] before:transition-transform
-                                                         before:duration-300 group-hover:before:rotate-[15deg]">
-                                                Musical Elements
-                                            </h3>
-                                            <div className="space-y-6">
-                                                <div className="bg-black/20 p-4 rounded-lg hover:bg-black/30
-                                                             transition-all duration-300">
-                                                    <h4 className="text-primary font-medium mb-2">Mood</h4>
-                                                    <p className="text-white/90">{songInfo.musicalAnalysis.mood}</p>
-                                                </div>
+                    {/* Add to Playlist button */}
+                    <button
+                        className="w-full py-3.5 rounded-lg text-white text-sm font-semibold
+                                  cursor-pointer transition-all duration-300 relative overflow-hidden
+                                  hover:-translate-y-0.5 active:translate-y-0 group"
+                        style={{
+                            fontFamily: 'Syne, sans-serif',
+                            letterSpacing: '0.1em',
+                            textTransform: 'uppercase',
+                            fontSize: '12px',
+                            background: '#1DB954',
+                        }}
+                        onClick={handleSaveToPlaylist}
+                    >
+                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent
+                                         -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                        <span className="relative">+ Add to Playlist</span>
+                    </button>
+                </div>
 
-                                                <div className="bg-black/20 p-4 rounded-lg hover:bg-black/30
-                                                             transition-all duration-300">
-                                                    <h4 className="text-primary font-medium mb-3">Key Elements</h4>
-                                                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                        {songInfo.musicalAnalysis.keyElements.map((element, idx) => (
-                                                            <li key={idx}
-                                                                className="flex items-center gap-2 text-white/90 pl-2
-                                                                         before:content-['•'] before:text-primary">
-                                                                {element}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-
-                                                <div className="bg-black/20 p-4 rounded-lg hover:bg-black/30
-                                                             transition-all duration-300">
-                                                    <h4 className="text-primary font-medium mb-2">Soundscape</h4>
-                                                    <p className="text-white/90">{songInfo.musicalAnalysis.soundscape}</p>
-                                                </div>
+                {/* Right column: AI Insights */}
+                <div className="overflow-y-auto pr-1 flex flex-col gap-5">
+                    {isLoadingInfo ? (
+                        <div className="my-4 flex flex-col items-center gap-4 animate-fadeIn py-12">
+                            <LoadingSpinner size="small" />
+                            <p className="text-white/40 text-sm italic animate-pulse"
+                               style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                                Gathering song info...
+                            </p>
+                        </div>
+                    ) : songInfo ? (
+                        <div className="space-y-5">
+                            {/* Section helper */}
+                            {[
+                                {
+                                    label: 'About this Song',
+                                    content: <p className="text-white/75 leading-relaxed text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.summary}</p>
+                                },
+                                songInfo.musicalAnalysis && {
+                                    label: 'Musical Elements',
+                                    content: (
+                                        <div className="space-y-4">
+                                            <div>
+                                                <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>Mood</p>
+                                                <p className="text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.musicalAnalysis.mood}</p>
                                             </div>
-                                        </div>
-                                    )}
-
-                                    {/* Cultural Context */}
-                                    {songInfo.culturalContext && (
-                                        <div className="p-6 bg-white/5 rounded-xl border border-white/10
-                                                      hover:bg-white/10 hover:border-spotify-green/30
-                                                      hover:shadow-lg hover:shadow-spotify-green/10
-                                                      transition-all duration-300 group animate-fadeIn
-                                                      [animation-delay:200ms]">
-                                            <h3 className="text-spotify-green text-xl mb-6 flex items-center gap-2
-                                                         before:content-['🌟'] before:transition-transform
-                                                         before:duration-300 group-hover:before:rotate-[15deg]">
-                                                Cultural Impact
-                                            </h3>
-                                            <div className="space-y-4">
-                                                <div className="flex flex-col gap-4">
-                                                    <div className="bg-black/20 p-4 rounded-lg hover:bg-black/30
-                                                                 transition-all duration-300">
-                                                        <h4 className="text-primary font-medium mb-2">Musical Era</h4>
-                                                        <p className="text-white/90">{songInfo.culturalContext.era}</p>
-                                                    </div>
-                                                    <div className="bg-black/20 p-4 rounded-lg hover:bg-black/30
-                                                                 transition-all duration-300">
-                                                        <h4 className="text-primary font-medium mb-2">Cultural Influence</h4>
-                                                        <p className="text-white/90">{songInfo.culturalContext.influence}</p>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="bg-black/20 p-4 rounded-lg hover:bg-black/30
-                                                             transition-all duration-300">
-                                                    <h4 className="text-primary font-medium mb-3">Similar Artists & Songs</h4>
-                                                    <ul className="space-y-2">
-                                                        {songInfo.culturalContext.connections.map((connection, idx) => (
-                                                            <li key={idx}
-                                                                className="text-white/90 flex items-center gap-2 pl-2
-                                                                         before:content-['•'] before:text-primary">
-                                                                {connection}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Credits Section */}
-                                    <div className="p-6 bg-white/5 rounded-xl border border-white/10
-                                                  hover:bg-white/10 hover:border-spotify-green/30
-                                                  hover:shadow-lg hover:shadow-spotify-green/10
-                                                  transition-all duration-300 group animate-fadeIn
-                                                  [animation-delay:400ms]">
-                                        <h3 className="text-spotify-green text-xl mb-6 flex items-center gap-2
-                                                     before:content-['🎵'] before:transition-transform
-                                                     before:duration-300 group-hover:before:rotate-[15deg]">
-                                            Song Credits
-                                        </h3>
-                                        <div className="space-y-6">
-                                            <div className="bg-black/20 p-4 rounded-lg hover:bg-black/30
-                                                         transition-all duration-300">
-                                                <h4 className="text-primary font-medium mb-2">Genre</h4>
-                                                <p className="text-white/90">
-                                                    {Array.isArray(songInfo.genre) ? songInfo.genre.join(', ') : 'N/A'}
-                                                </p>
-                                            </div>
-
-                                            {songInfo.credits && (
-                                                <div className="space-y-3">
-                                                    {songInfo.credits.map((credit, index) => (
-                                                        <div key={index}
-                                                             className="bg-black/20 p-4 rounded-lg group/item
-                                                                      hover:bg-black/30 transition-all duration-300">
-                                                            <div className="font-medium text-white mb-1 flex items-center
-                                                                          gap-2 transition-transform duration-300
-                                                                          group-hover/item:translate-x-1">
-                                                                {credit.name}
-                                                            </div>
-                                                            <div className="text-primary/90 text-sm">
-                                                                {credit.role}
-                                                            </div>
-                                                            {credit.knownFor && (
-                                                                <div className="text-white/60 text-sm mt-2 italic pl-2
-                                                                              border-l-2 border-primary/30">
-                                                                    {credit.knownFor}
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                            <div>
+                                                <p className="text-white/30 text-[10px] uppercase tracking-widest mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>Key Elements</p>
+                                                <ul className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                                                    {songInfo.musicalAnalysis.keyElements.map((el, i) => (
+                                                        <li key={i} className="flex items-start gap-2 text-white/70 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                                                            <span className="text-primary mt-1 flex-shrink-0">·</span>{el}
+                                                        </li>
                                                     ))}
+                                                </ul>
+                                            </div>
+                                            <div>
+                                                <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>Soundscape</p>
+                                                <p className="text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.musicalAnalysis.soundscape}</p>
+                                            </div>
+                                        </div>
+                                    )
+                                },
+                                songInfo.culturalContext && {
+                                    label: 'Cultural Impact',
+                                    content: (
+                                        <div className="space-y-4">
+                                            <div>
+                                                <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>Era</p>
+                                                <p className="text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.culturalContext.era}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>Influence</p>
+                                                <p className="text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.culturalContext.influence}</p>
+                                            </div>
+                                            {songInfo.culturalContext.connections?.length > 0 && (
+                                                <div>
+                                                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>Similar Artists</p>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {songInfo.culturalContext.connections.map((c, i) => (
+                                                            <span key={i} className="text-xs px-3 py-1 rounded-full border border-white/10 text-white/60"
+                                                                  style={{ fontFamily: 'DM Sans, sans-serif' }}>{c}</span>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
-
-                                    {/* Highlights */}
-                                    {songInfo.highlights && (
-                                        <div className="p-6 bg-white/5 rounded-xl border border-white/10
-                                                      hover:bg-white/10 hover:border-spotify-green/30
-                                                      hover:shadow-lg hover:shadow-spotify-green/10
-                                                      transition-all duration-300 group animate-fadeIn
-                                                      [animation-delay:600ms]">
-                                            <h3 className="text-spotify-green text-xl mb-6 flex items-center gap-2
-                                                         before:content-['💫'] before:transition-transform
-                                                         before:duration-300 group-hover:before:rotate-[15deg]">
-                                                Key Highlights
-                                            </h3>
-                                            <div className="grid gap-3">
-                                                {songInfo.highlights.map((highlight, idx) => (
-                                                    <div key={idx}
-                                                         className="flex items-center gap-4 p-4 bg-black/20
-                                                                  rounded-lg hover:bg-black/30 transition-all
-                                                                  duration-300 group/item">
-                                                        <span className="text-primary font-medium w-6 h-6 flex
-                                                                     items-center justify-center rounded-full
-                                                                     bg-primary/10">
-                                                            {idx + 1}
-                                                        </span>
-                                                        <p className="text-white/90 flex-1">{highlight}</p>
+                                    )
+                                },
+                                {
+                                    label: 'Song Credits',
+                                    content: (
+                                        <div className="space-y-4">
+                                            {Array.isArray(songInfo.genre) && songInfo.genre.length > 0 && (
+                                                <div>
+                                                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>Genre</p>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {songInfo.genre.map((g, i) => (
+                                                            <span key={i} className="text-xs px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary"
+                                                                  style={{ fontFamily: 'DM Sans, sans-serif' }}>{g}</span>
+                                                        ))}
                                                     </div>
-                                                ))}
-                                            </div>
+                                                </div>
+                                            )}
+                                            {songInfo.credits?.map((credit, i) => (
+                                                <div key={i} className="flex flex-col gap-0.5">
+                                                    <p className="text-white font-medium text-sm m-0" style={{ fontFamily: 'DM Sans, sans-serif' }}>{credit.name}</p>
+                                                    <p className="text-primary/80 text-xs m-0" style={{ fontFamily: 'DM Sans, sans-serif' }}>{credit.role}</p>
+                                                    {credit.knownFor && (
+                                                        <p className="text-white/40 text-xs m-0 mt-0.5 pl-2 border-l border-primary/20 italic" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                                                            {credit.knownFor}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            ))}
                                         </div>
-                                    )}
+                                    )
+                                },
+                                songInfo.highlights?.length > 0 && {
+                                    label: 'Key Highlights',
+                                    content: (
+                                        <div className="space-y-3">
+                                            {songInfo.highlights.map((h, i) => (
+                                                <div key={i} className="flex items-start gap-3">
+                                                    <span className="text-primary text-xs font-semibold w-5 flex-shrink-0 mt-0.5"
+                                                          style={{ fontFamily: 'DM Sans, sans-serif', fontVariantNumeric: 'tabular-nums' }}>
+                                                        {String(i + 1).padStart(2, '0')}
+                                                    </span>
+                                                    <p className="text-white/75 text-sm leading-relaxed flex-1 m-0" style={{ fontFamily: 'DM Sans, sans-serif' }}>{h}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )
+                                }
+                            ].filter(Boolean).map((section, i) => (
+                                <div key={i} className="border-l-2 border-primary/30 pl-5 py-1 transition-all duration-300 hover:border-primary/60">
+                                    <p className="text-primary m-0 mb-3"
+                                       style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+                                        {section.label}
+                                    </p>
+                                    {section.content}
                                 </div>
-                            ) : (
-                                <div className="p-6 bg-white/5 rounded-xl border border-white/10 transition-all duration-300">
-                                    <h3 className="text-spotify-green text-xl mb-4 flex items-center gap-2 before:content-['ℹ️']">Information Unavailable</h3>
-                                    <p className="text-white/90">Additional song information is currently unavailable. Please try again later.</p>
-                                </div>
-                            )}
-                        </>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="border-l-2 border-white/10 pl-5 py-1">
+                            <p className="text-white/30 m-0 mb-2"
+                               style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+                                Info
+                            </p>
+                            <p className="text-white/60 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                                Additional song information is currently unavailable.
+                            </p>
+                        </div>
                     )}
                 </div>
-            </div>
-            
-            <div className="flex justify-center mt-auto pt-8 animate-slideUp md:flex-row flex-col items-stretch">
-                <button
-                    className="px-8 py-4 rounded-full font-semibold cursor-pointer transition-all
-                              duration-300 min-w-[180px] flex items-center justify-center gap-3
-                              bg-spotify-green text-white hover:bg-spotify-green-light
-                              hover:-translate-y-1 hover:shadow-xl hover:shadow-spotify-green/30
-                              active:translate-y-0 active:shadow-md
-                              disabled:bg-spotify-green/50 disabled:border-spotify-green/50
-                              disabled:cursor-not-allowed disabled:transform-none
-                              before:content-['+'] before:text-2xl before:transition-transform
-                              before:duration-300 hover:before:rotate-[90deg] group"
-                    onClick={handleSaveToPlaylist}
-                >
-                    Add to Playlist
-                </button>
             </div>
         </div>
     );

@@ -61,16 +61,15 @@ const SearchBar = ({ onSearch }) => {
       <div className="relative flex items-center">
         <input
           type="text"
-          className="w-full py-5 px-12 md:px-14 border-2 border-white/10 rounded-full
-                             bg-white/5 text-white text-lg backdrop-blur-md transition-all duration-normal
-                             focus:outline-none focus:border-primary focus:bg-white/10
-                             focus:shadow-[0_0_32px_rgba(29,185,84,0.15)]
-                             hover:border-white/20 hover:bg-white/[0.07]
-                             placeholder:text-white/30 placeholder:transition-colors
-                             focus:placeholder:text-white/50
-                             md:text-base md:py-4
+          className="w-full py-4 px-12 md:px-14 border border-white/10 rounded-full
+                             bg-white/[0.04] text-white backdrop-blur-md transition-all duration-normal
+                             focus:outline-none focus:border-primary/60 focus:bg-white/[0.07]
+                             focus:shadow-[0_0_24px_rgba(29,185,84,0.12)]
+                             hover:border-white/15 hover:bg-white/[0.06]
+                             placeholder:text-white/25
                              animate-[fadeIn_0.3s_ease-out]"
-          placeholder="Search for songs..."
+          style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '15px' }}
+          placeholder="Search for songs, artists…"
           value={query}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}

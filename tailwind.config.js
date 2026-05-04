@@ -6,6 +6,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'syne': ['Syne', 'sans-serif'],
+        'dm-sans': ['DM Sans', 'sans-serif'],
+      },
       colors: {
         'spotify-green': '#1DB954',
         'spotify-green-light': '#1ed760',
@@ -15,8 +19,8 @@ module.exports = {
           dark: '#1aa34a',
         },
         background: {
-          DEFAULT: '#121212',
-          elevated: '#282828',
+          DEFAULT: '#0D0C0E',
+          elevated: '#1A1625',
         },
         text: {
           primary: '#FFFFFF',
@@ -77,7 +81,24 @@ module.exports = {
         bounce: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-15px)' },
-        }
+        },
+        drift: {
+          '0%, 100%': { transform: 'translateY(0) translateX(0)' },
+          '33%': { transform: 'translateY(-8px) translateX(4px)' },
+          '66%': { transform: 'translateY(4px) translateX(-6px)' },
+        },
+        soundbar: {
+          '0%, 100%': { transform: 'scaleY(0.2)' },
+          '50%': { transform: 'scaleY(1)' },
+        },
+        vinyl: {
+          'from': { transform: 'rotate(0deg)' },
+          'to': { transform: 'rotate(360deg)' },
+        },
+        glowPulse: {
+          '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
+          '50%': { opacity: '0.7', transform: 'scale(1.05)' },
+        },
       },
       animation: {
         fadeIn: 'fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
@@ -87,6 +108,10 @@ module.exports = {
         spinSlow: 'spinSlow 3s linear infinite',
         shimmer: 'shimmer 2.5s linear infinite',
         bounce: 'bounce 2s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+        drift: 'drift 6s ease-in-out infinite',
+        soundbar: 'soundbar 1s ease-in-out infinite',
+        vinyl: 'vinyl 4s linear infinite',
+        glowPulse: 'glowPulse 3s ease-in-out infinite',
       },
       backgroundSize: {
         'shimmer': '200% 100%',
