@@ -1,104 +1,72 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 const GeminiAPI = {
   getApiKey() {
-    const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
-    if (!apiKey) {
-      console.error("REACT_APP_GEMINI_API_KEY is not set in environment");
-      return null;
-    }
-    return apiKey;
-  },
-
-  parseRetryDelay(error) {
-    try {
-      const match = error.message?.match(/Please retry in ([\d.]+)s/);
-      if (match) return Math.ceil(parseFloat(match[1])) * 1000;
-    } catch {}
-    return null;
+    return process.env.REACT_APP_GROQ_API_KEY || null;
   },
 
   async generateSongInfo({ name, artist, album }, retryCount = 0) {
-    try {
-      console.log("Generating summary for:", name, "by", artist);
-      const apiKey = this.getApiKey();
+    const apiKey = this.getApiKey();
+    if (!apiKey) throw new Error("Groq API key is not configured");
 
-      if (!apiKey) {
-        throw new Error("Gemini API key is not configured");
-      }
-
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
-
-      const prompt = `As a passionate music historian and critic with deep expertise in musical analysis, provide an engaging deep-dive into "${name}" by ${artist} from the album "${
-        album || "Unknown"
-      }". Structure your response in this JSON format:
+    const prompt = `As a passionate music historian and critic with deep expertise in musical analysis, provide an engaging deep-dive into "${name}" by ${artist} from the album "${
+      album || "Unknown"
+    }". Respond only with a JSON object in this exact structure:
 
 {
-  "summary": "Write an engaging 4-5 sentence narrative that captures the song's essence, emotional impact, and cultural significance. Use vivid language and specific details to paint a picture of the song's unique character.",
-  
+  "summary": "4-5 sentence narrative capturing the song's essence, emotional impact, and cultural significance",
   "musicalAnalysis": {
-    "mood": "Describe the emotional atmosphere using 2-3 evocative adjectives",
-    "keyElements": ["List 3-4 standout musical elements like memorable riffs, vocal harmonies, or production techniques"],
+    "mood": "2-3 evocative adjectives describing the emotional atmosphere",
+    "keyElements": ["3-4 standout musical elements"],
     "soundscape": "One sentence describing the overall sonic texture and production style"
   },
-  
-  "genre": ["List primary and secondary genres, including any innovative fusion elements"],
-  
+  "genre": ["primary genre", "secondary genre"],
   "culturalContext": {
-    "era": "Identify the musical era and cultural moment",
-    "influence": "Briefly describe the song's impact on music or popular culture",
-    "connections": ["List 2-3 songs or artists that share similar styles or themes"]
+    "era": "musical era and cultural moment",
+    "influence": "brief description of cultural impact",
+    "connections": ["2-3 similar songs or artists"]
   },
-  
   "credits": [
     {
-      "name": "Name of contributor",
-      "role": "Their specific role with additional context about their contribution",
-      "knownFor": "A notable fact about this contributor's career or other significant work"
+      "name": "contributor name",
+      "role": "their specific role",
+      "knownFor": "notable fact about their career"
     }
   ],
-  
-  "highlights": ["List 3-4 most memorable or distinctive aspects of the song that make it stand out"]
-}
+  "highlights": ["3-4 most memorable aspects of the song"]
+}`;
 
-Be bold and specific in your analysis. Focus on what makes this song unique and memorable. Include interesting details that would engage music enthusiasts while remaining accessible to casual listeners.`;
+    try {
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [{ role: "user", content: prompt }],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        }),
+      });
 
-      console.log("Making request to Gemini API...");
-
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
-
-      // Extract JSON from the response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error("Failed to parse Gemini API response");
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        if (response.status === 429 && retryCount < 2) {
+          const retryAfter = parseInt(response.headers.get("retry-after") || "10") * 1000;
+          console.log(`Rate limited. Retrying in ${retryAfter / 1000}s...`);
+          await new Promise((res) => setTimeout(res, retryAfter));
+          return this.generateSongInfo({ name, artist, album }, retryCount + 1);
+        }
+        throw new Error(err.error?.message || `Groq API error: ${response.status}`);
       }
 
-      const jsonString = jsonMatch[0];
-
-      // Validate JSON before parsing
-      try {
-        const songInfo = JSON.parse(jsonString);
-        console.log("Generated song info:", songInfo);
-        return songInfo;
-      } catch (jsonError) {
-        console.error("Error parsing JSON:", jsonError);
-        throw new Error(
-          `Invalid JSON format in Gemini API response: ${jsonError.message}`
-        );
-      }
+      const data = await response.json();
+      const songInfo = JSON.parse(data.choices[0].message.content);
+      return songInfo;
     } catch (error) {
-      const is429 = error.message?.includes("429");
-      if (is429 && retryCount < 2) {
-        const delay = this.parseRetryDelay(error) ?? 20000;
-        console.log(`Rate limited. Retrying in ${delay / 1000}s...`);
-        await new Promise((res) => setTimeout(res, delay));
-        return this.generateSongInfo({ name, artist, album }, retryCount + 1);
-      }
       console.error("Error generating summary:", error);
-      if (is429) {
-        return `Gemini API quota exceeded. Please wait a moment and try again.`;
+      if (error.message?.includes("429")) {
+        return "Groq API quota exceeded. Please wait a moment and try again.";
       }
       return `Unable to generate song summary: ${error.message}`;
     }
