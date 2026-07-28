@@ -13,6 +13,11 @@ import { getCachedReport, setCachedReport } from './cache';
 import type { SongInfo } from '../../src/types/song-info';
 
 const sampleReport: SongInfo = {
+  emotionalFingerprint: {
+    arc: ['Build', 'Peak', 'Release'],
+    signatureMove: 'Chorus hit',
+    reachForThisWhen: 'Celebrating victories',
+  },
   summary: 'A great song.',
   musicalAnalysis: { mood: 'Upbeat', keyElements: [], soundscape: '' },
   genre: ['Pop'],
