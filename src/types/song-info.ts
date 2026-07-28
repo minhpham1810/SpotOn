@@ -16,6 +16,11 @@ export interface SongInfoCulturalContext {
   connections?: string[];
 }
 
+export interface SongInfoSource {
+  label: string;
+  url: string;
+}
+
 export interface SongInfo {
   summary: string;
   musicalAnalysis: SongInfoMusicalAnalysis;
@@ -23,4 +28,5 @@ export interface SongInfo {
   culturalContext: SongInfoCulturalContext;
   credits: SongInfoCredit[];
   highlights: string[];
+  sources: SongInfoSource[];
 }
