@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { test, expect, vi, beforeEach } from 'vitest';
 import { webSearch } from './webSearchTool';
 
 beforeEach(() => {
@@ -21,6 +21,15 @@ test('webSearch returns formatted results', async () => {
   expect(result).toContain('Review of Test Song');
   expect(result).toContain('https://example.com/review');
   expect(result).toContain('A glowing review.');
+
+  expect(mockFetch).toHaveBeenCalledWith(
+    'https://api.tavily.com/search',
+    expect.objectContaining({
+      headers: expect.objectContaining({ Authorization: 'Bearer api-key' }),
+    })
+  );
+  const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+  expect(requestBody.api_key).toBe('api-key');
 });
 
 test('webSearch reports when there are no results', async () => {

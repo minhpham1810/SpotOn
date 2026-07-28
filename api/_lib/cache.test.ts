@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { test, expect, vi, beforeEach } from 'vitest';
 
 const getMock = vi.fn();
 const setMock = vi.fn();

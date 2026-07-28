@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { test, expect, vi, beforeEach } from 'vitest';
 import { geniusLookup } from './geniusTool';
 
 beforeEach(() => {

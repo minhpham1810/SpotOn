@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { test, expect, vi, beforeEach } from 'vitest';
 
 const { getCachedReportMock, setCachedReportMock, runResearchAgentMock } = vi.hoisted(() => ({
   getCachedReportMock: vi.fn(),
@@ -17,7 +17,6 @@ vi.mock('./_lib/groqAgent', () => ({
 
 vi.mock('./_lib/tools/spotifyTools', () => ({
   spotifySearch: vi.fn(),
-  spotifyRelatedArtists: vi.fn(),
   spotifyArtistTopTracks: vi.fn(),
 }));
 vi.mock('./_lib/tools/geniusTool', () => ({ geniusLookup: vi.fn() }));
