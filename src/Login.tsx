@@ -8,7 +8,16 @@ const DESCRIPTORS = [
     'Build and save playlists in seconds',
 ];
 
-const COLOR_BLOCKS = [
+interface ColorBlock {
+  color: string;
+  size: number;
+  top: string;
+  left: string;
+  delay: string;
+  dur: string;
+}
+
+const COLOR_BLOCKS: ColorBlock[] = [
     { color: '#1DB954', size: 180, top: '5%', left: '8%', delay: '0s', dur: '7s' },
     { color: '#6B21A8', size: 140, top: '20%', left: '55%', delay: '1.2s', dur: '9s' },
     { color: '#BE185D', size: 160, top: '55%', left: '15%', delay: '2.1s', dur: '8s' },
@@ -19,7 +28,7 @@ const COLOR_BLOCKS = [
     { color: '#DC2626', size: 80, top: '45%', left: '78%', delay: '2.5s', dur: '8s' },
 ];
 
-const Login = () => {
+const Login: React.FC = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -27,7 +36,7 @@ const Login = () => {
         if (SpotifyAPI.isAuthenticated()) navigate('/', { replace: true });
     }, [navigate]);
 
-    const handleLogin = async (event) => {
+    const handleLogin = async (event: React.MouseEvent) => {
         event.preventDefault();
         try {
             const loginUrl = await SpotifyAPI.getLoginUrl();
@@ -39,9 +48,7 @@ const Login = () => {
 
     return (
         <div className="min-h-screen flex overflow-hidden" style={{ background: '#0D0C0E' }}>
-            {/* Left panel — atmospheric visual */}
             <div className="hidden md:flex flex-[0_0_60%] relative overflow-hidden">
-                {/* Blurred color blobs */}
                 {COLOR_BLOCKS.map((block, i) => (
                     <div
                         key={i}
@@ -60,10 +67,8 @@ const Login = () => {
                     />
                 ))}
 
-                {/* Dark overlay so blobs don't overwhelm */}
                 <div className="absolute inset-0" style={{ background: 'rgba(13, 12, 14, 0.55)' }} />
 
-                {/* Attribution */}
                 <div
                     className="absolute bottom-8 left-8 text-white/30 text-xs"
                     style={{ fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.1em' }}
@@ -71,7 +76,6 @@ const Login = () => {
                     Made by Minh Pham
                 </div>
 
-                {/* Large wordmark watermark */}
                 <div
                     className="absolute inset-0 flex items-center justify-center select-none pointer-events-none"
                     style={{
@@ -87,9 +91,7 @@ const Login = () => {
                 </div>
             </div>
 
-            {/* Right panel — login form */}
             <div className="flex-1 flex flex-col justify-center px-10 md:px-16 relative z-10">
-                {/* Mobile watermark blobs */}
                 <div className="md:hidden absolute inset-0 overflow-hidden pointer-events-none">
                     {COLOR_BLOCKS.slice(0, 3).map((block, i) => (
                         <div
@@ -109,7 +111,6 @@ const Login = () => {
                 </div>
 
                 <div className="max-w-[380px] w-full animate-fadeIn">
-                    {/* Wordmark */}
                     <div
                         className="mb-12 flex items-baseline gap-0"
                         style={{ fontFamily: 'Syne, sans-serif' }}
@@ -118,7 +119,6 @@ const Login = () => {
                         <span className="text-2xl font-extrabold text-primary uppercase tracking-wide">On</span>
                     </div>
 
-                    {/* Headline */}
                     <h1
                         className="mb-4 text-white leading-[1.1]"
                         style={{
@@ -132,7 +132,6 @@ const Login = () => {
                         <span className="text-primary">Deeper.</span>
                     </h1>
 
-                    {/* Descriptors */}
                     <ul className="list-none p-0 m-0 mb-10 space-y-3">
                         {DESCRIPTORS.map((desc, i) => (
                             <li
@@ -146,7 +145,6 @@ const Login = () => {
                         ))}
                     </ul>
 
-                    {/* Login button */}
                     <button
                         onClick={handleLogin}
                         className="w-full py-4 px-8 rounded-full text-white font-semibold text-base
@@ -158,16 +156,13 @@ const Login = () => {
                             background: '#1DB954',
                         }}
                     >
-                        {/* shimmer sweep */}
                         <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent
                                          -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                        {/* glow ring */}
                         <span className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100
                                          transition-opacity duration-300 shadow-[0_0_30px_rgba(29,185,84,0.5)]" />
                         <span className="relative">Connect with Spotify</span>
                     </button>
 
-                    {/* Mobile attribution */}
                     <p
                         className="md:hidden mt-10 text-white/20 text-xs text-center"
                         style={{ fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.1em' }}
