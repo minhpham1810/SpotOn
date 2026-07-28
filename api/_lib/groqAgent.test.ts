@@ -20,6 +20,11 @@ const finalReportJson = JSON.stringify({
   credits: [],
   highlights: ['Great solo'],
   sources: [{ label: 'Genius', url: 'https://genius.com/x' }],
+  emotionalFingerprint: {
+    arc: ['Opens guarded and restrained', 'Builds into aching longing', 'Resolves in quiet acceptance'],
+    signatureMove: 'The vocal cracks right on the word "gone" — that\'s not a flaw, that\'s the point.',
+    reachForThisWhen: 'You want to sit with something instead of getting over it.',
+  },
 });
 
 test('runResearchAgent calls a requested tool then returns the final parsed report', async () => {
@@ -64,6 +69,11 @@ test('runResearchAgent calls a requested tool then returns the final parsed repo
   expect(steps).toEqual(['lookup_lyrics']);
   expect(report.summary).toBe('A summary.');
   expect(report.sources).toEqual([{ label: 'Genius', url: 'https://genius.com/x' }]);
+  expect(report.emotionalFingerprint).toEqual({
+    arc: ['Opens guarded and restrained', 'Builds into aching longing', 'Resolves in quiet acceptance'],
+    signatureMove: 'The vocal cracks right on the word "gone" — that\'s not a flaw, that\'s the point.',
+    reachForThisWhen: 'You want to sit with something instead of getting over it.',
+  });
 });
 
 test('runResearchAgent stops after maxRounds and forces a final report', async () => {

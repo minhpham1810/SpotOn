@@ -38,6 +38,7 @@ const MAX_WEB_SEARCH_CALLS = 2;
 
 const REPORT_INSTRUCTIONS = `When you have gathered enough information, respond with ONLY a JSON object (no markdown fences, no extra text) in this exact structure:
 {
+  "emotionalFingerprint": { "arc": ["...", "...", "..."], "signatureMove": "...", "reachForThisWhen": "..." },
   "summary": "4-5 sentence narrative capturing the song's essence, emotional impact, and cultural significance",
   "musicalAnalysis": { "mood": "...", "keyElements": ["..."], "soundscape": "..." },
   "genre": ["..."],
@@ -46,7 +47,12 @@ const REPORT_INSTRUCTIONS = `When you have gathered enough information, respond 
   "highlights": ["..."],
   "sources": [{ "label": "...", "url": "..." }]
 }
-Populate "sources" using the URLs and provider names (e.g. "Genius", the web page's site name) that appeared in tool results you actually used. If you have no grounded sources, return an empty array.`;
+Populate "sources" using the URLs and provider names (e.g. "Genius", the web page's site name) that appeared in tool results you actually used. If you have no grounded sources, return an empty array.
+
+"emotionalFingerprint" is interpretive, not descriptive — do not restate what the song is about (that's "summary"'s job). Instead:
+- "arc": 3-4 short beats describing how the feeling shifts as the song moves from start to end (e.g. guarded → building → open).
+- "signatureMove": name ONE specific musical or lyrical choice (not a vibe) responsible for the song's emotional effect — a vocal break, a delayed chorus, an unresolved chord, a repeated line landing differently the second time.
+- "reachForThisWhen": one sentence framing a moment or feeling this song answers, not a genre or activity tag.`;
 
 interface GroqToolCall {
   id: string;
@@ -116,6 +122,7 @@ function parseFinalReport(content: string): SongInfo {
     .trim();
   const parsed = JSON.parse(cleaned);
   return {
+    emotionalFingerprint: parsed.emotionalFingerprint,
     summary: parsed.summary,
     musicalAnalysis: parsed.musicalAnalysis,
     genre: parsed.genre ?? [],
