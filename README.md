@@ -24,7 +24,7 @@ No more generic recommendations. Just music that feels **SpotOn**.
   - Cover Art
   - Credits
 - **💾 Save to Album** – Save tracks to your Spotify library directly
-- **🤖 AI-Powered Summaries** – Uses **Google Gemini** to generate tailored descriptions of song themes, moods, and context
+- **🤖 Deep Research Agent** – Uses a multi-step AI agent (Llama 3.3 70B) to search Spotify, Genius, and the live web before generating a cited report on song themes, artist background, cultural context, and related music
 - **🧭 Intuitive Navigation** – Smooth transitions between views using React Router
 
 ---
@@ -46,7 +46,9 @@ https://github.com/user-attachments/assets/16891384-79aa-47c3-94ad-b066b5e50ccd
 ### 🧠 AI & APIs
 
 - **Spotify Web API**
-- **Google Gemini API**
+- **Groq** (Llama 3.3 70B, tool-calling)
+- **Genius API**
+- **Tavily API**
 
 ### 🔐 Backend Architecture
 
@@ -71,13 +73,25 @@ https://github.com/user-attachments/assets/16891384-79aa-47c3-94ad-b066b5e50ccd
    ```
    - `VITE_SPOTIFY_CLIENT_ID` – your Spotify app's client ID
    - `VITE_SPOTIFY_REDIRECT_URI` – the OAuth redirect URI registered with your Spotify app (e.g. `http://127.0.0.1:3000`)
-   - `VITE_GROQ_API_KEY` – your Groq API key
-3. Start the dev server (runs on port 3000, matching the Spotify redirect URI logic):
+
+3. **To test the deep research agent locally**, use `vercel dev` instead of `npm run dev`. This runs both the Vite development server and the Vercel Edge Functions (where the research agent lives) alongside each other:
+   ```
+   vercel dev
+   ```
+   Set the server-only env vars (listed in `.env.example`'s comment — `GROQ_API_KEY`, `TAVILY_API_KEY`, `GENIUS_ACCESS_TOKEN`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`) via `vercel env pull` or manually in the Vercel dashboard.
+
+4. **For plain client-side testing** (without the research agent), start the dev server:
    ```
    npm run dev
    ```
 
-> **Note for deployments (e.g. Vercel):** this project was migrated from Create React App to Vite, so env vars must use the `VITE_` prefix instead of the old `REACT_APP_` prefix. If your hosting dashboard still has `REACT_APP_SPOTIFY_CLIENT_ID`, `REACT_APP_SPOTIFY_REDIRECT_URI`, or `REACT_APP_GEMINI_API_KEY` configured, you must manually rename them to `VITE_SPOTIFY_CLIENT_ID`, `VITE_SPOTIFY_REDIRECT_URI`, and `VITE_GROQ_API_KEY` respectively in the dashboard — this cannot be changed from the codebase.
+> **Note for deployments (e.g. Vercel):** this project was migrated from Create React App to Vite, so env vars must use the `VITE_` prefix instead of the old `REACT_APP_` prefix. If your hosting dashboard still has `REACT_APP_SPOTIFY_CLIENT_ID` or `REACT_APP_SPOTIFY_REDIRECT_URI` configured, you must manually rename them to `VITE_SPOTIFY_CLIENT_ID` and `VITE_SPOTIFY_REDIRECT_URI` respectively in the dashboard — this cannot be changed from the codebase.
+
+---
+
+## 🚀 Deployment
+
+SpotOn is deployed on **Vercel** for the full feature set (including the deep research agent). The **Docker/AWS Elastic Beanstalk** path serves the static Vite build only and does not run serverless functions — the research agent is unavailable on that deployment path. To use the research agent, deploy via Vercel and configure the server-only environment variables in your Vercel project settings.
 
 ---
 

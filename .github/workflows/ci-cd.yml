@@ -23,7 +23,6 @@ jobs:
           docker build \
             --build-arg VITE_SPOTIFY_CLIENT_ID=${{ secrets.SPOTIFY_CLIENT_ID }} \
             --build-arg VITE_SPOTIFY_REDIRECT_URI=${{ secrets.SPOTIFY_REDIRECT_URI }} \
-            --build-arg VITE_GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} \
             -t ${{ secrets.DOCKERHUB_USERNAME }}/spoton:latest \
             .
 
