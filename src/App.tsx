@@ -1,4 +1,3 @@
-// App.jsx
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import SearchBar from './SearchBar';
@@ -9,27 +8,25 @@ import Login from './Login';
 import LoadingSpinner from './LoadingSpinner';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import SpotifyAPI from './api/SpotifyAPI';
+import { SpotifyTrack } from './types/spotify';
 
-const MainContent = () => {
+const MainContent: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { showToast } = useToast();
-    const [searchResults, setSearchResults] = useState([]);
-    const [playlist, setPlaylist] = useState([]);
+    const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([]);
+    const [playlist, setPlaylist] = useState<SpotifyTrack[]>([]);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [playlistName, setPlaylistName] = useState("My Playlist");
 
-    // Handle authentication
     useEffect(() => {
         const checkAuth = async () => {
-            // If we're already authenticated, skip the check
             if (SpotifyAPI.isAuthenticated()) {
                 setIsAuthenticated(true);
                 setIsLoading(false);
                 return;
             } else {
-                // try to refresh token
                 try {
                     await SpotifyAPI.refreshAccessToken();
                     setIsAuthenticated(true);
@@ -40,13 +37,12 @@ const MainContent = () => {
                 }
             }
 
-            // Handle callback from Spotify
             if (location.pathname === '/callback') {
                 const params = new URLSearchParams(location.search);
                 const code = params.get('code');
                 const state = params.get('state');
                 const storedState = localStorage.getItem('spotify_auth_state');
-                
+
                 try {
                     if (!code) throw new Error('No code provided');
                     if (state !== storedState) throw new Error('State mismatch');
@@ -65,7 +61,6 @@ const MainContent = () => {
                 return;
             }
 
-            // Not authenticated and not on login or callback page
             if (!isAuthenticated && location.pathname !== '/login') {
                 navigate('/login', { replace: true });
             }
@@ -75,7 +70,7 @@ const MainContent = () => {
         checkAuth();
     }, [location, navigate, isAuthenticated, showToast]);
 
-    const searchSpotify = async (query) => {
+    const searchSpotify = async (query: string) => {
         if (!query.trim()) {
             setSearchResults([]);
             return;
@@ -90,14 +85,14 @@ const MainContent = () => {
         } catch (error) {
             console.error('Search error:', error);
             showToast('Failed to search songs', 'error');
-            if (error.message === 'User not authenticated') {
+            if (error instanceof Error && error.message === 'User not authenticated') {
                 setIsAuthenticated(false);
                 navigate('/login', { replace: true });
             }
         }
     };
 
-    const addToPlaylist = (track) => {
+    const addToPlaylist = (track: SpotifyTrack) => {
         if (!playlist.find(item => item.id === track.id)) {
             setPlaylist([...playlist, track]);
             showToast(`Added "${track.name}" to ${playlistName}`, 'success');
@@ -106,7 +101,7 @@ const MainContent = () => {
         }
     };
 
-    const removeFromPlaylist = (trackId) => {
+    const removeFromPlaylist = (trackId: string) => {
         const track = playlist.find(t => t.id === trackId);
         if (track) {
             setPlaylist(playlist.filter(t => t.id !== trackId));
@@ -123,7 +118,7 @@ const MainContent = () => {
         navigate('/login', { replace: true });
     };
 
-    const updatePlaylistName = (newName) => {
+    const updatePlaylistName = (newName: string) => {
         setPlaylistName(newName);
         showToast(`Playlist renamed to "${newName}"`, 'success');
     };
@@ -214,7 +209,7 @@ const MainContent = () => {
     );
 };
 
-const App = () => {
+const App: React.FC = () => {
     return (
         <Router>
             <ToastProvider>

@@ -4,23 +4,16 @@ import './styles/global.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
-// Create root
 const container = document.getElementById('root');
+if (!container) {
+  throw new Error('Root element #root not found');
+}
 const root = createRoot(container);
 
-// Render app
 root.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
 );
 
-// Performance monitoring
 reportWebVitals(console.log);
-
-// Add service worker registration if you want PWA support later
-// if ('serviceWorker' in navigator) {
-//   window.addEventListener('load', () => {
-//     navigator.serviceWorker.register('/service-worker.js');
-//   });
-// }
