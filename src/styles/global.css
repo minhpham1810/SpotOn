@@ -36,7 +36,6 @@
   --transition-duration-slow: 500ms;
 
   --background-image-shimmer: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
-  --background-size-shimmer: 200% 100%;
 
   --animate-fadeIn: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   --animate-slideIn: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
@@ -95,6 +94,16 @@
 @keyframes glowPulse {
   0%, 100% { opacity: 0.4; transform: scale(1); }
   50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+/* Tailwind v4 only generates a `background-size` utility for a theme key when a
+   matching `bg-size-*` class name is scanned from source; `bg-shimmer` only maps to
+   `--background-image-*`. Set background-size directly so the shimmer sweep
+   animation (which animates background-position) is actually visible, matching the
+   old Tailwind v3 config where backgroundImage.shimmer and backgroundSize.shimmer
+   merged onto the same generated `.bg-shimmer` selector. */
+.bg-shimmer {
+  background-size: 200% 100%;
 }
 
 /* Custom scrollbar styling */
