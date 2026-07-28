@@ -50,3 +50,19 @@ test('researchSong throws when the HTTP response is not ok', async () => {
     ResearchAgentAPI.researchSong({ id: '1', name: 'Song', artist: 'Artist' }, () => {})
   ).rejects.toThrow('Research request failed: 500');
 });
+
+test('researchSong correctly handles events split across multiple chunks', async () => {
+  // Split the closing \n\n across two chunks: first chunk ends with \n, second starts with \n
+  const chunk1 = 'event: step\ndata: {"tool":"spotify_lookup","status":"Searching..."}\n';
+  const chunk2 = '\nevent: report\ndata: {"summary":"done","musicalAnalysis":{"mood":"","keyElements":[],"soundscape":""},"genre":[],"culturalContext":{"era":"","influence":""},"credits":[],"highlights":[],"sources":[]}\n\n';
+
+  (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(streamResponse([chunk1, chunk2]));
+
+  const steps: string[] = [];
+  const report = await ResearchAgentAPI.researchSong({ id: '1', name: 'Song', artist: 'Artist' }, (step) =>
+    steps.push(step.tool)
+  );
+
+  expect(steps).toEqual(['spotify_lookup']);
+  expect(report.summary).toBe('done');
+});

@@ -17,19 +17,14 @@ interface ParsedSseEvent {
   data: string;
 }
 
-function parseSseBlocks(buffer: string): ParsedSseEvent[] {
-  return buffer
-    .split('\n\n')
-    .filter((block) => block.trim().length > 0)
-    .map((block) => {
-      const lines = block.split('\n');
-      const eventLine = lines.find((l) => l.startsWith('event:'));
-      const dataLine = lines.find((l) => l.startsWith('data:'));
-      return {
-        event: eventLine ? eventLine.replace('event:', '').trim() : 'message',
-        data: dataLine ? dataLine.replace('data:', '').trim() : '',
-      };
-    });
+function parseSseBlock(block: string): ParsedSseEvent {
+  const lines = block.split('\n');
+  const eventLine = lines.find((l) => l.startsWith('event:'));
+  const dataLine = lines.find((l) => l.startsWith('data:'));
+  return {
+    event: eventLine ? eventLine.replace('event:', '').trim() : 'message',
+    data: dataLine ? dataLine.replace('data:', '').trim() : '',
+  };
 }
 
 const ResearchAgentAPI = {
@@ -55,11 +50,13 @@ const ResearchAgentAPI = {
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
 
-      const events = parseSseBlocks(buffer);
-      const lastBoundary = buffer.lastIndexOf('\n\n');
-      buffer = lastBoundary === -1 ? buffer : buffer.slice(lastBoundary + 2);
+      // Split on \n\n, pop the last element (incomplete trailing segment), parse the rest
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop() || ''; // Keep the incomplete trailing segment for the next read
 
-      for (const { event, data } of events) {
+      for (const part of parts) {
+        if (part.trim().length === 0) continue;
+        const { event, data } = parseSseBlock(part);
         if (!data) continue;
         if (event === 'step') {
           onStep(JSON.parse(data));
