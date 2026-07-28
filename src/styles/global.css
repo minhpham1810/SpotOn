@@ -1,6 +1,98 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --font-syne: 'Syne', sans-serif;
+  --font-dm-sans: 'DM Sans', sans-serif;
+
+  --color-spotify-green: #1DB954;
+  --color-spotify-green-light: #1ed760;
+  --color-primary: #1DB954;
+  --color-primary-light: #1ed760;
+  --color-primary-dark: #1aa34a;
+
+  --color-background: #0D0C0E;
+  --color-background-elevated: #1A1625;
+
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: rgba(255, 255, 255, 0.7);
+  --color-text-tertiary: rgba(255, 255, 255, 0.5);
+
+  --color-surface-light: rgba(255, 255, 255, 0.1);
+  --color-surface-lighter: rgba(255, 255, 255, 0.05);
+
+  --color-border: rgba(255, 255, 255, 0.1);
+
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-DEFAULT: 0 4px 8px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
+
+  --radius-sm: 4px;
+  --radius-DEFAULT: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
+
+  --transition-duration-fast: 200ms;
+  --transition-duration-DEFAULT: 300ms;
+  --transition-duration-slow: 500ms;
+
+  --animate-fadeIn: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  --animate-slideIn: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  --animate-slideUp: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  --animate-spinSlow: spinSlow 3s linear infinite;
+  --animate-shimmer: shimmer 2.5s linear infinite;
+  --animate-bounce: bounce 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  --animate-drift: drift 6s ease-in-out infinite;
+  --animate-soundbar: soundbar 1s ease-in-out infinite;
+  --animate-vinyl: vinyl 4s linear infinite;
+  --animate-glowPulse: glowPulse 3s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); filter: blur(5px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes slideIn {
+  from { transform: translateX(-20px); opacity: 0; filter: blur(5px); }
+  to { transform: translateX(0); opacity: 1; filter: blur(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); filter: blur(5px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.97); }
+}
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+@keyframes drift {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  33% { transform: translateY(-8px) translateX(4px); }
+  66% { transform: translateY(4px) translateX(-6px); }
+}
+@keyframes soundbar {
+  0%, 100% { transform: scaleY(0.2); }
+  50% { transform: scaleY(1); }
+}
+@keyframes vinyl {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
 
 /* Custom scrollbar styling */
 ::-webkit-scrollbar {
@@ -91,13 +183,13 @@
     }
 
     /* Responsive typography */
-    @screen md {
+    @media (min-width: 768px) {
         html {
             @apply text-[16px];
         }
     }
 
-    @screen lg {
+    @media (min-width: 1024px) {
         html {
             @apply text-[18px];
         }
