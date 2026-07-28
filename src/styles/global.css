@@ -35,6 +35,9 @@
   --transition-duration-DEFAULT: 300ms;
   --transition-duration-slow: 500ms;
 
+  --background-image-shimmer: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  --background-size-shimmer: 200% 100%;
+
   --animate-fadeIn: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   --animate-slideIn: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   --animate-slideUp: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
