@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useToast } from './contexts/ToastContext';
 import SpotifyAPI from './api/SpotifyAPI';
+import { SpotifyTrack } from './types/spotify';
 
-const VinylIcon = () => (
+const VinylIcon: React.FC = () => (
     <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg"
          style={{ animation: 'vinyl 4s linear infinite' }}>
         <circle cx="28" cy="28" r="27" stroke="rgba(255,255,255,0.08)" strokeWidth="2" fill="rgba(255,255,255,0.03)" />
@@ -13,11 +14,19 @@ const VinylIcon = () => (
     </svg>
 );
 
-const Playlist = ({ tracks, onRemoveTrack, name, onNameChange, onClearPlaylist }) => {
+interface PlaylistProps {
+  tracks: SpotifyTrack[];
+  onRemoveTrack: (trackId: string) => void;
+  name: string;
+  onNameChange: (newName: string) => void;
+  onClearPlaylist: () => void;
+}
+
+const Playlist: React.FC<PlaylistProps> = ({ tracks, onRemoveTrack, name, onNameChange, onClearPlaylist }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(name);
     const [isSaving, setIsSaving] = useState(false);
-    const inputRef = useRef(null);
+    const inputRef = useRef<HTMLInputElement>(null);
     const { showToast } = useToast();
 
     const handleSavePlaylist = async () => {
@@ -31,7 +40,8 @@ const Playlist = ({ tracks, onRemoveTrack, name, onNameChange, onClearPlaylist }
             showToast('Playlist saved to Spotify successfully. Check your library!', 'success');
         } catch (error) {
             console.error('Error saving playlist:', error);
-            showToast('Failed to save playlist: ' + error.message, 'error');
+            const message = error instanceof Error ? error.message : String(error);
+            showToast('Failed to save playlist: ' + message, 'error');
         } finally {
             setIsSaving(false);
         }
@@ -48,7 +58,7 @@ const Playlist = ({ tracks, onRemoveTrack, name, onNameChange, onClearPlaylist }
         setEditValue(name);
     };
 
-    const handleNameChange = (e) => setEditValue(e.target.value);
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => setEditValue(e.target.value);
 
     const handleNameSubmit = () => {
         const newName = editValue.trim();
@@ -56,7 +66,7 @@ const Playlist = ({ tracks, onRemoveTrack, name, onNameChange, onClearPlaylist }
         setIsEditing(false);
     };
 
-    const handleKeyPress = (e) => {
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') handleNameSubmit();
         else if (e.key === 'Escape') { setIsEditing(false); setEditValue(name); }
     };
@@ -72,7 +82,6 @@ const Playlist = ({ tracks, onRemoveTrack, name, onNameChange, onClearPlaylist }
         <div className="p-6 rounded-xl bg-white/[0.03] border border-white/5 h-full flex flex-col
                       transition-all duration-300 hover:bg-white/[0.04] hover:border-white/8
                       backdrop-blur-sm">
-            {/* Panel header */}
             <div className="mb-5">
                 <p className="m-0 mb-2 text-primary"
                    style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.3em', textTransform: 'uppercase' }}>
@@ -107,7 +116,6 @@ const Playlist = ({ tracks, onRemoveTrack, name, onNameChange, onClearPlaylist }
                 <div className="h-px bg-white/8" />
             </div>
 
-            {/* Track list */}
             <div className="flex-grow overflow-y-auto min-h-[200px]">
                 {tracks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-[200px] text-white/30 text-center p-8">
@@ -155,7 +163,6 @@ const Playlist = ({ tracks, onRemoveTrack, name, onNameChange, onClearPlaylist }
                 )}
             </div>
 
-            {/* Action buttons */}
             {tracks.length > 0 && (
                 <div className="mt-5 pt-4 border-t border-white/8 flex flex-col gap-2.5">
                     <button
