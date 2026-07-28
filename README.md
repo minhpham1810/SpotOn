@@ -59,6 +59,28 @@ https://github.com/user-attachments/assets/16891384-79aa-47c3-94ad-b066b5e50ccd
 
 ---
 
+## 🧑‍💻 Local development
+
+1. Install dependencies:
+   ```
+   npm install
+   ```
+2. Copy `.env.example` to `.env` and fill in the values:
+   ```
+   cp .env.example .env
+   ```
+   - `VITE_SPOTIFY_CLIENT_ID` – your Spotify app's client ID
+   - `VITE_SPOTIFY_REDIRECT_URI` – the OAuth redirect URI registered with your Spotify app (e.g. `http://127.0.0.1:3000`)
+   - `VITE_GROQ_API_KEY` – your Groq API key
+3. Start the dev server (runs on port 3000, matching the Spotify redirect URI logic):
+   ```
+   npm run dev
+   ```
+
+> **Note for deployments (e.g. Vercel):** this project was migrated from Create React App to Vite, so env vars must use the `VITE_` prefix instead of the old `REACT_APP_` prefix. If your hosting dashboard still has `REACT_APP_SPOTIFY_CLIENT_ID`, `REACT_APP_SPOTIFY_REDIRECT_URI`, or `REACT_APP_GEMINI_API_KEY` configured, you must manually rename them to `VITE_SPOTIFY_CLIENT_ID`, `VITE_SPOTIFY_REDIRECT_URI`, and `VITE_GROQ_API_KEY` respectively in the dashboard — this cannot be changed from the codebase.
+
+---
+
 ## 🔮 Future Improvements
 
 - 🔊 **Spotify Premium Playback** support

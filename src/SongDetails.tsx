@@ -51,7 +51,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
         if (!song) return;
         try {
             onAddToPlaylist(song);
-        } catch (error) {
+        } catch {
             showToast('Failed to add song to playlist', 'error');
         }
     };

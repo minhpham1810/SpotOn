@@ -34,6 +34,7 @@
   --transition-duration-fast: 200ms;
   --transition-duration-DEFAULT: 300ms;
   --transition-duration-slow: 500ms;
+  --default-transition-duration: 300ms;
 
   --background-image-shimmer: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
 

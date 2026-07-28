@@ -232,7 +232,14 @@ const SpotifyAPI = {
       const data = await response.json();
       console.log("Search results:", data.tracks.items.length, "tracks found");
 
-      return data.tracks.items.map((track: any): SpotifyTrack => ({
+      interface RawSpotifyTrack {
+        id: string;
+        name: string;
+        artists: { name: string }[];
+        album: { name: string; images: { url: string }[] };
+      }
+
+      return data.tracks.items.map((track: RawSpotifyTrack): SpotifyTrack => ({
         id: track.id,
         name: track.name,
         artist: track.artists[0].name,

@@ -13,14 +13,10 @@ interface TrackProps {
 const Track: React.FC<TrackProps> = ({ track, onAdd, onRemove, isInPlaylist = false }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [hasAudioSupport, setHasAudioSupport] = useState(true);
+    const [hasAudioSupport] = useState(() => typeof Audio !== 'undefined');
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const navigate = useNavigate();
     const { showToast } = useToast();
-
-    useEffect(() => {
-        setHasAudioSupport(typeof Audio !== 'undefined');
-    }, []);
 
     useEffect(() => {
         if (!track.preview_url || !hasAudioSupport) return;
