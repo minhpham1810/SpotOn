@@ -1,12 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from './contexts/ToastContext';
+import { SpotifyTrack } from './types/spotify';
 
-const Track = ({ track, onAdd, onRemove, isInPlaylist = false }) => {
+interface TrackProps {
+  track: SpotifyTrack;
+  onAdd?: (track: SpotifyTrack) => void;
+  onRemove?: (trackId: string) => void;
+  isInPlaylist?: boolean;
+}
+
+const Track: React.FC<TrackProps> = ({ track, onAdd, onRemove, isInPlaylist = false }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [hasAudioSupport, setHasAudioSupport] = useState(true);
-    const audioRef = useRef(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
     const navigate = useNavigate();
     const { showToast } = useToast();
 
@@ -39,7 +47,7 @@ const Track = ({ track, onAdd, onRemove, isInPlaylist = false }) => {
         };
     }, [track.preview_url, hasAudioSupport, showToast]);
 
-    const handlePlayPause = async (e) => {
+    const handlePlayPause = async (e: React.MouseEvent) => {
         e.stopPropagation();
 
         if (!track.preview_url) {
@@ -56,10 +64,10 @@ const Track = ({ track, onAdd, onRemove, isInPlaylist = false }) => {
             });
 
             if (isPlaying) {
-                audioRef.current.pause();
+                audioRef.current?.pause();
                 setIsPlaying(false);
             } else {
-                await audioRef.current.play();
+                await audioRef.current?.play();
                 setIsPlaying(true);
             }
         } catch (error) {
@@ -78,12 +86,12 @@ const Track = ({ track, onAdd, onRemove, isInPlaylist = false }) => {
         navigate(`/song/${track.id}`);
     };
 
-    const handleAction = (e) => {
+    const handleAction = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (isInPlaylist) {
-            onRemove(track.id);
+            onRemove?.(track.id);
         } else {
-            onAdd(track);
+            onAdd?.(track);
         }
     };
 
@@ -110,7 +118,6 @@ const Track = ({ track, onAdd, onRemove, isInPlaylist = false }) => {
                      hover:before:opacity-100
                      group"
         >
-            {/* Album art with ambient glow */}
             <div className="relative flex-shrink-0">
                 <img
                     src={track.cover}

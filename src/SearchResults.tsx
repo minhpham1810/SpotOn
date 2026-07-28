@@ -1,7 +1,8 @@
 import React from 'react';
 import Track from './Track';
+import { SpotifyTrack } from './types/spotify';
 
-const SoundbarsIcon = () => (
+const SoundbarsIcon: React.FC = () => (
     <div className="flex items-end gap-1 h-10">
         {[1, 1.8, 1.3, 2, 1.5].map((delay, i) => (
             <div
@@ -18,7 +19,13 @@ const SoundbarsIcon = () => (
     </div>
 );
 
-const SearchResults = ({ searchResults, onAddTrack, isLoading }) => {
+interface SearchResultsProps {
+  searchResults: SpotifyTrack[];
+  onAddTrack: (track: SpotifyTrack) => void;
+  isLoading?: boolean;
+}
+
+const SearchResults: React.FC<SearchResultsProps> = ({ searchResults, onAddTrack, isLoading }) => {
     return (
         <div className="p-6 rounded-xl bg-white/[0.03] border border-white/5 h-full flex flex-col
                       transition-all duration-300 hover:bg-white/[0.04] hover:border-white/8
