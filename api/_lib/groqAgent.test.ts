@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { test, expect, vi, beforeEach } from 'vitest';
 import { runResearchAgent, type AgentTool } from './groqAgent';
 
 beforeEach(() => {
@@ -42,6 +42,7 @@ test('runResearchAgent calls a requested tool then returns the final parsed repo
   const execute = vi.fn().mockResolvedValue('Lyrics info found.');
   const tool: AgentTool = {
     name: 'lookup_lyrics',
+    label: 'Looking up lyrics',
     description: 'Looks up lyrics info',
     parameters: {
       type: 'object',
@@ -79,6 +80,7 @@ test('runResearchAgent stops after maxRounds and forces a final report', async (
 
   const tool: AgentTool = {
     name: 'noop',
+    label: 'Doing nothing',
     description: 'does nothing',
     parameters: { type: 'object', properties: {}, required: [] },
     execute: vi.fn().mockResolvedValue('ok'),
@@ -136,6 +138,7 @@ test('runResearchAgent handles tool.execute() failure gracefully and continues',
   const execute = vi.fn().mockRejectedValue(new Error('Tool crashed'));
   const tool: AgentTool = {
     name: 'failing_tool',
+    label: 'Failing on purpose',
     description: 'A tool that fails',
     parameters: { type: 'object', properties: {}, required: [] },
     execute,
@@ -164,4 +167,53 @@ test('runResearchAgent parses final report with markdown code fence wrapping', a
 
   expect(report.summary).toBe('A summary.');
   expect(report.sources).toEqual([{ label: 'Genius', url: 'https://genius.com/x' }]);
+});
+
+test('runResearchAgent caps web_search at 2 calls and short-circuits further requests', async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  const webSearchCallMessage = (id: string) => ({
+    role: 'assistant',
+    content: null,
+    tool_calls: [{ id, type: 'function', function: { name: 'web_search', arguments: '{"query":"test"}' } }],
+  });
+
+  mockFetch
+    .mockResolvedValueOnce(groqResponse(webSearchCallMessage('call1'), 'tool_calls'))
+    .mockResolvedValueOnce(groqResponse(webSearchCallMessage('call2'), 'tool_calls'))
+    .mockResolvedValueOnce(groqResponse(webSearchCallMessage('call3'), 'tool_calls'))
+    .mockResolvedValueOnce(groqResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+
+  const execute = vi.fn().mockResolvedValue('Some web results.');
+  const tool: AgentTool = {
+    name: 'web_search',
+    label: 'Searching the web for cultural context',
+    description: 'Search the live web.',
+    parameters: {
+      type: 'object',
+      properties: { query: { type: 'string', description: 'q' } },
+      required: ['query'],
+    },
+    execute,
+  };
+
+  const report = await runResearchAgent({
+    track: { name: 'Song', artist: 'Artist' },
+    tools: [tool],
+    groqApiKey: 'key',
+  });
+
+  expect(execute).toHaveBeenCalledTimes(2);
+
+  const allRequestMessages = mockFetch.mock.calls.map(
+    ([, requestInit]) => JSON.parse((requestInit as { body: string }).body).messages
+  );
+  const lastRequestMessages = allRequestMessages[allRequestMessages.length - 1] as Array<{
+    role: string;
+    content: string;
+  }>;
+  const thirdCallResult = lastRequestMessages.find(
+    (m) => m.role === 'tool' && m.content.includes('budget exhausted')
+  );
+  expect(thirdCallResult?.content).toContain('web_search budget exhausted for this report (max 2 calls)');
+  expect(report.summary).toBe('A summary.');
 });

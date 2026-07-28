@@ -1,6 +1,6 @@
 import { runResearchAgent, type AgentTool } from './_lib/groqAgent';
 import { getCachedReport, setCachedReport } from './_lib/cache';
-import { spotifySearch, spotifyRelatedArtists, spotifyArtistTopTracks } from './_lib/tools/spotifyTools';
+import { spotifySearch, spotifyArtistTopTracks } from './_lib/tools/spotifyTools';
 import { geniusLookup } from './_lib/tools/geniusTool';
 import { webSearch } from './_lib/tools/webSearchTool';
 import type { SongInfo } from '../src/types/song-info';
@@ -22,6 +22,7 @@ function buildTools(): AgentTool[] {
   return [
     {
       name: 'spotify_search',
+      label: "Searching Spotify's catalog",
       description: "Search Spotify's catalog for tracks matching a free-text query.",
       parameters: {
         type: 'object',
@@ -31,17 +32,8 @@ function buildTools(): AgentTool[] {
       execute: async (args) => spotifySearch(String(args.query), spotifyCreds),
     },
     {
-      name: 'spotify_related_artists',
-      description: 'Get artists Spotify considers related to the given artist name.',
-      parameters: {
-        type: 'object',
-        properties: { artistName: { type: 'string', description: 'Artist name' } },
-        required: ['artistName'],
-      },
-      execute: async (args) => spotifyRelatedArtists(String(args.artistName), spotifyCreds),
-    },
-    {
       name: 'spotify_artist_top_tracks',
+      label: "Checking the artist's top tracks on Spotify",
       description: "Get an artist's top tracks on Spotify.",
       parameters: {
         type: 'object',
@@ -52,6 +44,7 @@ function buildTools(): AgentTool[] {
     },
     {
       name: 'genius_lookup',
+      label: 'Reading lyrics annotations on Genius',
       description: "Look up a song's Genius page for its description and annotations.",
       parameters: {
         type: 'object',
@@ -65,6 +58,7 @@ function buildTools(): AgentTool[] {
     },
     {
       name: 'web_search',
+      label: 'Searching the web for cultural context',
       description: 'Search the live web for reviews, cultural context, or the story behind a song.',
       parameters: {
         type: 'object',
@@ -96,10 +90,15 @@ export default async function handler(request: Request): Promise<Response> {
       const send = (event: string, data: unknown) => controller.enqueue(encoder.encode(sseEvent(event, data)));
 
       try {
-        const cached = await getCachedReport(trackId);
+        let cached: SongInfo | null = null;
+        try {
+          cached = await getCachedReport(trackId);
+        } catch (cacheError) {
+          console.error('getCachedReport failed, falling back to a fresh run:', cacheError);
+        }
+
         if (cached) {
           send('report', cached);
-          controller.close();
           return;
         }
 
@@ -110,8 +109,11 @@ export default async function handler(request: Request): Promise<Response> {
           onStep: (step) => send('step', step),
         });
 
-        await setCachedReport(trackId, report);
         send('report', report);
+
+        setCachedReport(trackId, report).catch((cacheError) => {
+          console.error('setCachedReport failed:', cacheError);
+        });
       } catch (error) {
         send('error', { message: error instanceof Error ? error.message : String(error) });
       } finally {

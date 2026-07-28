@@ -66,23 +66,6 @@ export async function spotifySearch(query: string, creds: SpotifyCredentials): P
   return tracks.length > 0 ? tracks.join('; ') : 'No results found.';
 }
 
-export async function spotifyRelatedArtists(
-  artistName: string,
-  creds: SpotifyCredentials
-): Promise<string> {
-  const token = await getAppAccessToken(creds);
-  const artistId = await resolveArtistId(artistName, token);
-  if (!artistId) return `No Spotify artist found for "${artistName}".`;
-
-  const response = await fetch(`https://api.spotify.com/v1/artists/${artistId}/related-artists`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) throw new Error(`Spotify related-artists failed: ${response.status}`);
-  const data = await response.json();
-  const names = (data.artists ?? []).slice(0, 5).map((a: { name: string }) => a.name);
-  return names.length > 0 ? names.join(', ') : 'No related artists found.';
-}
-
 export async function spotifyArtistTopTracks(
   artistName: string,
   creds: SpotifyCredentials

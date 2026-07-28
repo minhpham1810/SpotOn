@@ -13,6 +13,7 @@ export interface AgentStepEvent {
 
 export interface AgentTool {
   name: string;
+  label: string;
   description: string;
   parameters: {
     type: 'object';
@@ -32,6 +33,8 @@ export interface RunResearchAgentOptions {
 
 const DEFAULT_MAX_ROUNDS = 6;
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const WEB_SEARCH_TOOL_NAME = 'web_search';
+const MAX_WEB_SEARCH_CALLS = 2;
 
 const REPORT_INSTRUCTIONS = `When you have gathered enough information, respond with ONLY a JSON object (no markdown fences, no extra text) in this exact structure:
 {
@@ -127,6 +130,7 @@ export async function runResearchAgent(options: RunResearchAgentOptions): Promis
   const { track, tools, groqApiKey, onStep } = options;
   const maxRounds = options.maxRounds ?? DEFAULT_MAX_ROUNDS;
   const toolsByName = new Map(tools.map((tool) => [tool.name, tool]));
+  let webSearchCalls = 0;
 
   const messages: GroqMessage[] = [
     {
@@ -165,14 +169,21 @@ export async function runResearchAgent(options: RunResearchAgentOptions): Promis
         continue;
       }
 
-      onStep?.({ tool: tool.name, status: `Calling ${tool.name}...` });
+      onStep?.({ tool: tool.name, status: `${tool.label}...` });
 
       let result: string;
-      try {
-        const args = JSON.parse(toolCall.function.arguments || '{}');
-        result = await tool.execute(args);
-      } catch (error) {
-        result = `Tool "${tool.name}" failed: ${error instanceof Error ? error.message : String(error)}`;
+      if (tool.name === WEB_SEARCH_TOOL_NAME && webSearchCalls >= MAX_WEB_SEARCH_CALLS) {
+        result = `web_search budget exhausted for this report (max ${MAX_WEB_SEARCH_CALLS} calls) — use your other tools or finalize your report.`;
+      } else {
+        try {
+          if (tool.name === WEB_SEARCH_TOOL_NAME) {
+            webSearchCalls++;
+          }
+          const args = JSON.parse(toolCall.function.arguments || '{}');
+          result = await tool.execute(args);
+        } catch (error) {
+          result = `Tool "${tool.name}" failed: ${error instanceof Error ? error.message : String(error)}`;
+        }
       }
 
       messages.push({
