@@ -1,13 +1,24 @@
 import { sha256 } from "js-sha256";
+import type {
+  SpotifyTrack,
+  TrackDetails,
+  SpotifyTokenResponse,
+  SpotifyPlaylist,
+} from "../types/spotify";
+
 const SpotifyAPI = {
-  clientId: process.env.REACT_APP_SPOTIFY_CLIENT_ID,
+  clientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined,
   redirectUri:
     window.location.hostname === "127.0.0.1"
       ? "https://127.0.0.1:3000/callback"
       : "https://spot-on-six.vercel.app/callback",
   markets: ["US", "GB", "ES", "FR", "DE"],
 
-  init() {
+  accessToken: null as string | null,
+  refreshToken: null as string | null,
+  expiresAt: null as number | null,
+
+  init(): void {
     if (!this.clientId) {
       console.error("Missing Spotify client ID");
       throw new Error("Spotify client ID not set in .env file");
@@ -15,18 +26,15 @@ const SpotifyAPI = {
 
     this.accessToken = localStorage.getItem("spotify_access_token");
     this.refreshToken = localStorage.getItem("spotify_refresh_token");
-    this.expiresAt = localStorage.getItem("spotify_expires_at");
+    const storedExpiresAt = localStorage.getItem("spotify_expires_at");
+    this.expiresAt = storedExpiresAt ? Number(storedExpiresAt) : null;
   },
 
-  isAuthenticated() {
-    return (
-      !!this.accessToken &&
-      !!this.expiresAt &&
-      Date.now() < parseInt(this.expiresAt)
-    );
+  isAuthenticated(): boolean {
+    return !!this.accessToken && !!this.expiresAt && Date.now() < this.expiresAt;
   },
 
-  logout() {
+  logout(): void {
     localStorage.removeItem("spotify_access_token");
     localStorage.removeItem("spotify_refresh_token");
     localStorage.removeItem("spotify_expires_at");
@@ -36,7 +44,7 @@ const SpotifyAPI = {
     this.expiresAt = null;
   },
 
-  generateRandomString(length) {
+  generateRandomString(length: number): string {
     let text = "";
     const possible =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -46,7 +54,7 @@ const SpotifyAPI = {
     return text;
   },
 
-  generateCodeChallenge() {
+  generateCodeChallenge(): string {
     const codeVerifier = this.generateRandomString(128);
     localStorage.setItem("spotify_code_verifier", codeVerifier);
 
@@ -60,7 +68,7 @@ const SpotifyAPI = {
     return codeChallenge;
   },
 
-  async getLoginUrl() {
+  async getLoginUrl(): Promise<string> {
     if (!this.clientId) {
       throw new Error("Missing Spotify client ID");
     }
@@ -90,13 +98,13 @@ const SpotifyAPI = {
       scope: scope,
       code_challenge_method: "S256",
       code_challenge: codeChallenge,
-      show_dialog: true,
+      show_dialog: "true",
     });
 
     return `https://accounts.spotify.com/authorize?${params.toString()}`;
   },
 
-  async handleAuthCallback(code) {
+  async handleAuthCallback(code: string): Promise<SpotifyTokenResponse> {
     console.log("Handling auth callback...");
 
     const codeVerifier = localStorage.getItem("spotify_code_verifier");
@@ -109,7 +117,7 @@ const SpotifyAPI = {
       grant_type: "authorization_code",
       code: code,
       redirect_uri: this.redirectUri,
-      client_id: this.clientId,
+      client_id: this.clientId ?? "",
       code_verifier: codeVerifier,
     });
 
@@ -134,7 +142,6 @@ const SpotifyAPI = {
       console.log("Token exchange successful");
       this.setTokens(data);
 
-      // Clean up PKCE data
       localStorage.removeItem("spotify_code_verifier");
       localStorage.removeItem("spotify_auth_state");
 
@@ -145,7 +152,7 @@ const SpotifyAPI = {
     }
   },
 
-  async refreshAccessToken() {
+  async refreshAccessToken(): Promise<SpotifyTokenResponse> {
     if (!this.refreshToken) {
       throw new Error("No refresh token available");
     }
@@ -153,7 +160,7 @@ const SpotifyAPI = {
     const params = new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: this.refreshToken,
-      client_id: this.clientId,
+      client_id: this.clientId ?? "",
     });
 
     try {
@@ -178,7 +185,7 @@ const SpotifyAPI = {
     }
   },
 
-  setTokens(data) {
+  setTokens(data: SpotifyTokenResponse): void {
     this.accessToken = data.access_token;
     if (data.refresh_token) {
       this.refreshToken = data.refresh_token;
@@ -186,13 +193,13 @@ const SpotifyAPI = {
     this.expiresAt = Date.now() + data.expires_in * 1000;
 
     localStorage.setItem("spotify_access_token", this.accessToken);
-    localStorage.setItem("spotify_refresh_token", this.refreshToken);
-    localStorage.setItem("spotify_expires_at", this.expiresAt);
+    localStorage.setItem("spotify_refresh_token", this.refreshToken ?? "");
+    localStorage.setItem("spotify_expires_at", String(this.expiresAt));
 
     console.log("Tokens updated successfully");
   },
 
-  async getAccessToken() {
+  async getAccessToken(): Promise<string> {
     if (!this.isAuthenticated()) {
       if (this.refreshToken) {
         await this.refreshAccessToken();
@@ -200,14 +207,13 @@ const SpotifyAPI = {
         throw new Error("User not authenticated");
       }
     }
-    return this.accessToken;
+    return this.accessToken as string;
   },
 
-  async searchTracks(query) {
+  async searchTracks(query: string): Promise<SpotifyTrack[]> {
     const token = await this.getAccessToken();
 
     try {
-      // Search in US market first
       const response = await fetch(
         `https://api.spotify.com/v1/search?q=${encodeURIComponent(
           query
@@ -226,7 +232,7 @@ const SpotifyAPI = {
       const data = await response.json();
       console.log("Search results:", data.tracks.items.length, "tracks found");
 
-      return data.tracks.items.map((track) => ({
+      return data.tracks.items.map((track: any): SpotifyTrack => ({
         id: track.id,
         name: track.name,
         artist: track.artists[0].name,
@@ -239,7 +245,7 @@ const SpotifyAPI = {
     }
   },
 
-  async getTrackDetails(trackId) {
+  async getTrackDetails(trackId: string): Promise<TrackDetails> {
     const token = await this.getAccessToken();
 
     try {
@@ -272,11 +278,13 @@ const SpotifyAPI = {
     }
   },
 
-  async createPlaylist(playlistName, tracks) {
+  async createPlaylist(
+    playlistName: string,
+    tracks: SpotifyTrack[]
+  ): Promise<SpotifyPlaylist> {
     const token = await this.getAccessToken();
 
     try {
-      // First, get the user's ID
       const userResponse = await fetch("https://api.spotify.com/v1/me", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -289,7 +297,6 @@ const SpotifyAPI = {
 
       const userData = await userResponse.json();
 
-      // Create a new playlist
       const createResponse = await fetch(
         `https://api.spotify.com/v1/users/${userData.id}/playlists`,
         {
@@ -310,9 +317,8 @@ const SpotifyAPI = {
         throw new Error("Failed to create playlist");
       }
 
-      const playlistData = await createResponse.json();
+      const playlistData: SpotifyPlaylist = await createResponse.json();
 
-      // Add tracks to the playlist
       const addTracksResponse = await fetch(
         `https://api.spotify.com/v1/playlists/${playlistData.id}/tracks`,
         {
@@ -339,7 +345,6 @@ const SpotifyAPI = {
   },
 };
 
-// Initialize the API when the module loads
 SpotifyAPI.init();
 
 export default SpotifyAPI;

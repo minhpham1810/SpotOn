@@ -1,9 +1,20 @@
+import type { SongInfo } from "../types/song-info";
+
+interface GeminiAPITrack {
+  name: string;
+  artist: string;
+  album?: string;
+}
+
 const GeminiAPI = {
-  getApiKey() {
-    return process.env.REACT_APP_GROQ_API_KEY || null;
+  getApiKey(): string | null {
+    return (import.meta.env.VITE_GROQ_API_KEY as string | undefined) ?? null;
   },
 
-  async generateSongInfo({ name, artist, album }, retryCount = 0) {
+  async generateSongInfo(
+    { name, artist, album }: GeminiAPITrack,
+    retryCount = 0
+  ): Promise<SongInfo | string> {
     const apiKey = this.getApiKey();
     if (!apiKey) throw new Error("Groq API key is not configured");
 
@@ -61,14 +72,15 @@ const GeminiAPI = {
       }
 
       const data = await response.json();
-      const songInfo = JSON.parse(data.choices[0].message.content);
+      const songInfo: SongInfo = JSON.parse(data.choices[0].message.content);
       return songInfo;
     } catch (error) {
       console.error("Error generating summary:", error);
-      if (error.message?.includes("429")) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("429")) {
         return "Groq API quota exceeded. Please wait a moment and try again.";
       }
-      return `Unable to generate song summary: ${error.message}`;
+      return `Unable to generate song summary: ${message}`;
     }
   },
 };
