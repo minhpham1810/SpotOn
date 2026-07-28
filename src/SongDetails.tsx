@@ -32,6 +32,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
 
                 setIsLoadingInfo(true);
                 setResearchSteps([]);
+                setSongInfo(null);
                 try {
                     const info = await ResearchAgentAPI.researchSong(
                         { id, name: data.name, artist: data.artist, album: data.album },
