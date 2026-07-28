@@ -55,6 +55,11 @@ test('shows research trace steps while the agent is working', async () => {
 
 test('renders source links once the report arrives', async () => {
   researchSongMock.mockResolvedValue({
+    emotionalFingerprint: {
+      arc: ['Guarded', 'Building', 'Open'],
+      signatureMove: 'A held breath before the last chorus.',
+      reachForThisWhen: 'You need company for a quiet mood.',
+    },
     summary: 'A great song.',
     musicalAnalysis: { mood: 'Calm', keyElements: [], soundscape: '' },
     genre: [],
@@ -68,6 +73,33 @@ test('renders source links once the report arrives', async () => {
 
   const sourceLink = await screen.findByRole('link', { name: 'Genius' });
   expect(sourceLink).toHaveAttribute('href', 'https://genius.com/x');
+});
+
+test('renders the Emotional Fingerprint section first, above About this Song', async () => {
+  researchSongMock.mockResolvedValue({
+    emotionalFingerprint: {
+      arc: ['Opens guarded and restrained', 'Builds into aching longing', 'Resolves in quiet acceptance'],
+      signatureMove: 'The vocal cracks right on the word "gone".',
+      reachForThisWhen: 'You want to sit with something instead of getting over it.',
+    },
+    summary: 'A great song.',
+    musicalAnalysis: { mood: 'Calm', keyElements: [], soundscape: '' },
+    genre: [],
+    culturalContext: { era: '', influence: '' },
+    credits: [],
+    highlights: [],
+    sources: [],
+  });
+
+  renderSongDetails();
+
+  expect(await screen.findByText(/Opens guarded and restrained/i)).toBeInTheDocument();
+  expect(screen.getByText(/The vocal cracks right on the word "gone"/i)).toBeInTheDocument();
+  expect(screen.getByText(/You want to sit with something instead of getting over it/i)).toBeInTheDocument();
+
+  const sectionLabels = screen.getAllByText(/Emotional Fingerprint|About this Song/i);
+  expect(sectionLabels[0]).toHaveTextContent('Emotional Fingerprint');
+  expect(sectionLabels[1]).toHaveTextContent('About this Song');
 });
 
 test('aborts the in-flight research stream when the song id changes or the component unmounts', async () => {

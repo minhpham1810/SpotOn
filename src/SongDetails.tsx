@@ -104,6 +104,31 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
 
     const infoSections = typeof songInfo === 'object' && songInfo !== null
         ? ([
+            songInfo.emotionalFingerprint && {
+                label: 'Emotional Fingerprint',
+                content: (
+                    <div className="space-y-4">
+                        <div>
+                            <p className="text-white/30 text-[10px] uppercase tracking-widest mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>The Journey</p>
+                            <ul className="space-y-1.5">
+                                {songInfo.emotionalFingerprint.arc.map((beat, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                                        <span className="text-primary mt-1 flex-shrink-0">·</span>{beat}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                        <div>
+                            <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>The Signature Move</p>
+                            <p className="text-white/75 text-sm leading-relaxed italic" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.emotionalFingerprint.signatureMove}</p>
+                        </div>
+                        <div>
+                            <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>Reach for This When</p>
+                            <p className="text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.emotionalFingerprint.reachForThisWhen}</p>
+                        </div>
+                    </div>
+                )
+            },
             {
                 label: 'About this Song',
                 content: <p className="text-white/75 leading-relaxed text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.summary}</p>
