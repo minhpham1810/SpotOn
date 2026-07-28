@@ -104,7 +104,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
 
     const infoSections = typeof songInfo === 'object' && songInfo !== null
         ? ([
-            songInfo.emotionalFingerprint && {
+            songInfo.emotionalFingerprint && Array.isArray(songInfo.emotionalFingerprint.arc) && {
                 label: 'Emotional Fingerprint',
                 content: (
                     <div className="space-y-4">

@@ -3,6 +3,7 @@ import { MemoryRouter, Routes, Route, Link } from 'react-router-dom';
 import { vi, test, expect, beforeEach } from 'vitest';
 import SongDetails from './SongDetails';
 import { ToastProvider } from './contexts/ToastContext';
+import { SongInfo } from './types/song-info';
 
 vi.mock('./api/SpotifyAPI', () => ({
   default: {
@@ -100,6 +101,45 @@ test('renders the Emotional Fingerprint section first, above About this Song', a
   const sectionLabels = screen.getAllByText(/Emotional Fingerprint|About this Song/i);
   expect(sectionLabels[0]).toHaveTextContent('Emotional Fingerprint');
   expect(sectionLabels[1]).toHaveTextContent('About this Song');
+});
+
+test('renders gracefully without crashing when emotionalFingerprint is missing', async () => {
+  researchSongMock.mockResolvedValue({
+    summary: 'A great song.',
+    musicalAnalysis: { mood: 'Calm', keyElements: [], soundscape: '' },
+    genre: [],
+    culturalContext: { era: '', influence: '' },
+    credits: [],
+    highlights: [],
+    sources: [],
+  } as unknown as SongInfo);
+
+  expect(() => renderSongDetails()).not.toThrow();
+
+  expect(await screen.findByText('About this Song')).toBeInTheDocument();
+  expect(screen.queryByText('Emotional Fingerprint')).not.toBeInTheDocument();
+});
+
+test('renders gracefully without crashing when emotionalFingerprint.arc is malformed', async () => {
+  researchSongMock.mockResolvedValue({
+    emotionalFingerprint: {
+      arc: 'not an array',
+      signatureMove: 'A held breath before the last chorus.',
+      reachForThisWhen: 'You need company for a quiet mood.',
+    },
+    summary: 'A great song.',
+    musicalAnalysis: { mood: 'Calm', keyElements: [], soundscape: '' },
+    genre: [],
+    culturalContext: { era: '', influence: '' },
+    credits: [],
+    highlights: [],
+    sources: [],
+  } as unknown as SongInfo);
+
+  expect(() => renderSongDetails()).not.toThrow();
+
+  expect(await screen.findByText('About this Song')).toBeInTheDocument();
+  expect(screen.queryByText('Emotional Fingerprint')).not.toBeInTheDocument();
 });
 
 test('aborts the in-flight research stream when the song id changes or the component unmounts', async () => {

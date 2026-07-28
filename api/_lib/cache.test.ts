@@ -38,7 +38,7 @@ test('getCachedReport returns null when nothing is cached', async () => {
   const result = await getCachedReport('track123');
 
   expect(result).toBeNull();
-  expect(getMock).toHaveBeenCalledWith('song-research:track123');
+  expect(getMock).toHaveBeenCalledWith('song-research:v2:track123');
 });
 
 test('getCachedReport returns the cached report when present', async () => {
@@ -52,7 +52,7 @@ test('getCachedReport returns the cached report when present', async () => {
 test('setCachedReport writes the report with a 30-day expiry', async () => {
   await setCachedReport('track123', sampleReport);
 
-  expect(setMock).toHaveBeenCalledWith('song-research:track123', sampleReport, {
+  expect(setMock).toHaveBeenCalledWith('song-research:v2:track123', sampleReport, {
     ex: 60 * 60 * 24 * 30,
   });
 });
