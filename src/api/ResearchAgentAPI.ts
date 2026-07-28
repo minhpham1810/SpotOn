@@ -28,7 +28,11 @@ function parseSseBlock(block: string): ParsedSseEvent {
 }
 
 const ResearchAgentAPI = {
-  async researchSong(track: ResearchTrack, onStep: (step: ResearchStepEvent) => void): Promise<SongInfo> {
+  async researchSong(
+    track: ResearchTrack,
+    onStep: (step: ResearchStepEvent) => void,
+    signal?: AbortSignal
+  ): Promise<SongInfo> {
     const params = new URLSearchParams({
       trackId: track.id,
       name: track.name,
@@ -36,7 +40,7 @@ const ResearchAgentAPI = {
     });
     if (track.album) params.set('album', track.album);
 
-    const response = await fetch(`/api/research-song?${params.toString()}`);
+    const response = await fetch(`/api/research-song?${params.toString()}`, { signal });
     if (!response.ok || !response.body) {
       throw new Error(`Research request failed: ${response.status}`);
     }

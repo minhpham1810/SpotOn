@@ -22,6 +22,8 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
     const [researchSteps, setResearchSteps] = useState<ResearchStepEvent[]>([]);
 
     useEffect(() => {
+        const controller = new AbortController();
+
         const fetchSongDetails = async () => {
             if (!id) return;
             try {
@@ -33,14 +35,20 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
                 try {
                     const info = await ResearchAgentAPI.researchSong(
                         { id, name: data.name, artist: data.artist, album: data.album },
-                        (step) => setResearchSteps((prev) => [...prev, step])
+                        (step) => setResearchSteps((prev) => [...prev, step]),
+                        controller.signal
                     );
                     setSongInfo(info);
                 } catch (error) {
+                    if (error instanceof Error && error.name === 'AbortError') {
+                        return;
+                    }
                     console.error('Error generating song info:', error);
                     showToast('Unable to load song details at this time', 'error');
                 } finally {
-                    setIsLoadingInfo(false);
+                    if (!controller.signal.aborted) {
+                        setIsLoadingInfo(false);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching song details:', error);
@@ -50,6 +58,10 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
         };
 
         fetchSongDetails();
+
+        return () => {
+            controller.abort();
+        };
     }, [id, showToast]);
 
     const handleSaveToPlaylist = () => {

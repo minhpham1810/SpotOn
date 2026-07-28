@@ -66,3 +66,35 @@ test('researchSong correctly handles events split across multiple chunks', async
   expect(steps).toEqual(['spotify_lookup']);
   expect(report.summary).toBe('done');
 });
+
+test('researchSong forwards the abort signal to fetch', async () => {
+  const sse =
+    'event: report\ndata: {"summary":"done","musicalAnalysis":{"mood":"","keyElements":[],"soundscape":""},"genre":[],"culturalContext":{"era":"","influence":""},"credits":[],"highlights":[],"sources":[]}\n\n';
+  (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(streamResponse([sse]));
+
+  const controller = new AbortController();
+  await ResearchAgentAPI.researchSong({ id: '1', name: 'Song', artist: 'Artist' }, () => {}, controller.signal);
+
+  expect(fetch).toHaveBeenCalledWith(
+    expect.stringContaining('/api/research-song'),
+    expect.objectContaining({ signal: controller.signal })
+  );
+});
+
+test('researchSong rejects when the signal is aborted', async () => {
+  (fetch as unknown as ReturnType<typeof vi.fn>).mockImplementation((_url: string, options?: { signal?: AbortSignal }) => {
+    return new Promise((_resolve, reject) => {
+      options?.signal?.addEventListener('abort', () => {
+        const err = new Error('The operation was aborted');
+        err.name = 'AbortError';
+        reject(err);
+      });
+    });
+  });
+
+  const controller = new AbortController();
+  const promise = ResearchAgentAPI.researchSong({ id: '1', name: 'Song', artist: 'Artist' }, () => {}, controller.signal);
+  controller.abort();
+
+  await expect(promise).rejects.toThrow('The operation was aborted');
+});
