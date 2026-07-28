@@ -17,6 +17,9 @@
 /vite.config.js
 /vite.config.d.ts
 
+# superpowers materials (local only, not committed)
+/docs/superpowers/
+
 # misc
 .DS_Store
 .env.local
