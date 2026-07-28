@@ -1,6 +1,16 @@
 import React, { useEffect } from 'react';
 
-const Toast = ({ message, type = 'success', duration = 3000, onClose, style }) => {
+export type ToastType = 'success' | 'error';
+
+interface ToastProps {
+  message: string;
+  type?: ToastType;
+  duration?: number;
+  onClose: () => void;
+  style?: React.CSSProperties;
+}
+
+const Toast: React.FC<ToastProps> = ({ message, type = 'success', duration = 3000, onClose, style }) => {
     useEffect(() => {
         const timer = setTimeout(() => {
             onClose();
@@ -19,7 +29,7 @@ const Toast = ({ message, type = 'success', duration = 3000, onClose, style }) =
 
     const showClasses = 'opacity-100 translate-y-0 pointer-events-auto';
 
-    const iconClasses = {
+    const iconClasses: Record<ToastType, string> = {
         success: 'text-primary transition-transform duration-300 group-hover:scale-110',
         error: 'text-red-500 transition-transform duration-300 group-hover:scale-110'
     };
@@ -58,8 +68,7 @@ const Toast = ({ message, type = 'success', duration = 3000, onClose, style }) =
     );
 };
 
-// ToastContainer component
-export const ToastContainer = ({ children }) => {
+export const ToastContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return (
         <div className="fixed bottom-6 right-6 flex flex-col gap-2.5 pointer-events-none z-50 items-end">
             {children}

@@ -1,21 +1,32 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import Toast, { ToastContainer } from '../Toast';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import Toast, { ToastContainer, ToastType } from '../Toast';
 
-const ToastContext = createContext(null);
+interface ToastItem {
+  id: string;
+  message: string;
+  type: ToastType;
+  duration: number;
+  createdAt: number;
+}
 
-export const ToastProvider = ({ children }) => {
-    const [toasts, setToasts] = useState([]);
+interface ToastContextValue {
+  showToast: (message: string, type?: ToastType, duration?: number) => void;
+}
 
-    const showToast = useCallback((message, type = 'success', duration = 3000) => {
+const ToastContext = createContext<ToastContextValue | null>(null);
+
+export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+    const showToast = useCallback((message: string, type: ToastType = 'success', duration = 3000) => {
         const id = Math.random().toString(36).substring(7);
         setToasts(prev => [...prev, { id, message, type, duration, createdAt: Date.now() }]);
     }, []);
 
-    const removeToast = useCallback((id) => {
+    const removeToast = useCallback((id: string) => {
         setToasts(prev => prev.filter(toast => toast.id !== id));
     }, []);
 
-    // Sort toasts by creation time to ensure newest is at bottom
     const sortedToasts = [...toasts].sort((a, b) => a.createdAt - b.createdAt);
 
     return (
@@ -30,7 +41,6 @@ export const ToastProvider = ({ children }) => {
                         duration={toast.duration}
                         onClose={() => removeToast(toast.id)}
                         style={{
-                            // Calculate position from bottom for each toast
                             bottom: `${(index * 70) + 20}px`
                         }}
                     />
@@ -40,7 +50,7 @@ export const ToastProvider = ({ children }) => {
     );
 };
 
-export const useToast = () => {
+export const useToast = (): ToastContextValue => {
     const context = useContext(ToastContext);
     if (!context) {
         throw new Error('useToast must be used within a ToastProvider');

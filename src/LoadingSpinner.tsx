@@ -1,13 +1,20 @@
 import React from 'react';
 
-const LoadingSpinner = ({ size = 'medium', light = true }) => {
-    const sizeClasses = {
+type SpinnerSize = 'small' | 'medium' | 'large';
+
+interface LoadingSpinnerProps {
+  size?: SpinnerSize;
+  light?: boolean;
+}
+
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 'medium', light = true }) => {
+    const sizeClasses: Record<SpinnerSize, string> = {
         small: 'w-6 h-6',
         medium: 'w-10 h-10',
         large: 'w-16 h-16'
     };
 
-    const spinnerRingClasses = {
+    const spinnerRingClasses: Record<SpinnerSize, string> = {
         small: 'w-5 h-5',
         medium: 'w-8 h-8',
         large: 'w-[51px] h-[51px]'
@@ -49,7 +56,7 @@ const LoadingSpinner = ({ size = 'medium', light = true }) => {
     );
 };
 
-export const LoadingOverlay = ({ size = 'large', light = true }) => (
+export const LoadingOverlay: React.FC<LoadingSpinnerProps> = ({ size = 'large', light = true }) => (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex justify-center items-center z-50
                     animate-fadeIn">
         <div className="relative p-8 rounded-xl bg-white/5">
