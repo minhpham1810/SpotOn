@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from './contexts/ToastContext';
 import LoadingSpinner from './LoadingSpinner';
 import SpotifyAPI from './api/SpotifyAPI';
-import GeminiAPI from './api/GeminiAPI';
+import ResearchAgentAPI, { ResearchStepEvent } from './api/ResearchAgentAPI';
 import { TrackDetails } from './types/spotify';
 import { SongInfo } from './types/song-info';
 
@@ -19,6 +19,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
     const [songInfo, setSongInfo] = useState<SongInfo | string | null>(null);
     const [isLoadingInfo, setIsLoadingInfo] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [researchSteps, setResearchSteps] = useState<ResearchStepEvent[]>([]);
 
     useEffect(() => {
         const fetchSongDetails = async () => {
@@ -28,8 +29,12 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
                 setSong(data);
 
                 setIsLoadingInfo(true);
+                setResearchSteps([]);
                 try {
-                    const info = await GeminiAPI.generateSongInfo(data);
+                    const info = await ResearchAgentAPI.researchSong(
+                        { id, name: data.name, artist: data.artist, album: data.album },
+                        (step) => setResearchSteps((prev) => [...prev, step])
+                    );
                     setSongInfo(info);
                 } catch (error) {
                     console.error('Error generating song info:', error);
@@ -185,6 +190,25 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
                         ))}
                     </div>
                 )
+            },
+            songInfo.sources && songInfo.sources.length > 0 && {
+                label: 'Sources',
+                content: (
+                    <div className="flex flex-wrap gap-2">
+                        {songInfo.sources.map((source, i) => (
+                            <a
+                                key={i}
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs px-3 py-1 rounded-full border border-white/10 text-white/60 hover:text-primary hover:border-primary/40 transition-colors"
+                                style={{ fontFamily: 'DM Sans, sans-serif' }}
+                            >
+                                {source.label}
+                            </a>
+                        ))}
+                    </div>
+                )
             }
         ] as Array<InfoSection | false | undefined>).filter((section): section is InfoSection => Boolean(section))
         : [];
@@ -261,10 +285,18 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
                     {isLoadingInfo ? (
                         <div className="my-4 flex flex-col items-center gap-4 animate-fadeIn py-12">
                             <LoadingSpinner size="small" />
-                            <p className="text-white/40 text-sm italic animate-pulse"
-                               style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                                Gathering song info...
-                            </p>
+                            {researchSteps.length > 0 ? (
+                                <ul className="text-white/40 text-sm italic space-y-1 text-center list-none p-0 m-0"
+                                    style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                                    {researchSteps.map((step, i) => (
+                                        <li key={i}>{step.status}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-white/40 text-sm italic animate-pulse" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                                    Researching this song...
+                                </p>
+                            )}
                         </div>
                     ) : typeof songInfo === 'string' ? (
                         <div className="border-l-2 border-white/10 pl-5 py-1">
