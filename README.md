@@ -52,12 +52,12 @@ https://github.com/user-attachments/assets/16891384-79aa-47c3-94ad-b066b5e50ccd
 
 ### 🔐 Backend Architecture
 
-*(Bundled within Docker container)*
-
-- Handles Spotify token management
-- Hides API keys from client
-- Sends requests to Gemini API and returns AI summaries
-- Manages CORS and routing
+- **Docker/Nginx path** (AWS Elastic Beanstalk): Serves the static Vite frontend build only; no backend logic or serverless functions.
+- **Vercel deployment**: Includes the **Deep Research Agent Edge Function** (`api/research-song.ts`) that:
+  - Runs the multi-step research agent (Llama 3.3 70B) with tool-calling
+  - Manages server-only API credentials (Groq, Tavily, Genius, Spotify, Upstash Redis)
+  - Searches Spotify, Genius, and the live web for song information
+  - Returns a cited research report to the client
 
 ---
 
