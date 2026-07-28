@@ -64,25 +64,30 @@ async function callGroq(
   tools: AgentTool[],
   retryCount = 0
 ): Promise<{ message: GroqMessage; finishReason: string }> {
+  const body: Record<string, unknown> = {
+    model: GROQ_MODEL,
+    messages,
+    temperature: 0.7,
+  };
+
+  if (tools.length > 0) {
+    body.tools = tools.map((tool) => ({
+      type: 'function',
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters,
+      },
+    }));
+  }
+
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages,
-      tools: tools.map((tool) => ({
-        type: 'function',
-        function: {
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.parameters,
-        },
-      })),
-      temperature: 0.7,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -160,11 +165,11 @@ export async function runResearchAgent(options: RunResearchAgentOptions): Promis
         continue;
       }
 
-      const args = JSON.parse(toolCall.function.arguments || '{}');
       onStep?.({ tool: tool.name, status: `Calling ${tool.name}...` });
 
       let result: string;
       try {
+        const args = JSON.parse(toolCall.function.arguments || '{}');
         result = await tool.execute(args);
       } catch (error) {
         result = `Tool "${tool.name}" failed: ${error instanceof Error ? error.message : String(error)}`;

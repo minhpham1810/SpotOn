@@ -115,3 +115,53 @@ test('runResearchAgent retries once on a 429 and then succeeds', async () => {
   expect(mockFetch).toHaveBeenCalledTimes(2);
   expect(report.summary).toBe('A summary.');
 });
+
+test('runResearchAgent handles tool.execute() failure gracefully and continues', async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  mockFetch
+    .mockResolvedValueOnce(
+      groqResponse(
+        {
+          role: 'assistant',
+          content: null,
+          tool_calls: [
+            { id: 'call1', type: 'function', function: { name: 'failing_tool', arguments: '{}' } },
+          ],
+        },
+        'tool_calls'
+      )
+    )
+    .mockResolvedValueOnce(groqResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+
+  const execute = vi.fn().mockRejectedValue(new Error('Tool crashed'));
+  const tool: AgentTool = {
+    name: 'failing_tool',
+    description: 'A tool that fails',
+    parameters: { type: 'object', properties: {}, required: [] },
+    execute,
+  };
+
+  const report = await runResearchAgent({
+    track: { name: 'Song', artist: 'Artist' },
+    tools: [tool],
+    groqApiKey: 'key',
+  });
+
+  expect(execute).toHaveBeenCalled();
+  expect(report.summary).toBe('A summary.');
+});
+
+test('runResearchAgent parses final report with markdown code fence wrapping', async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  const wrappedReportJson = `\`\`\`json\n${finalReportJson}\n\`\`\``;
+  mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: wrappedReportJson }, 'stop'));
+
+  const report = await runResearchAgent({
+    track: { name: 'Song', artist: 'Artist' },
+    tools: [],
+    groqApiKey: 'key',
+  });
+
+  expect(report.summary).toBe('A summary.');
+  expect(report.sources).toEqual([{ label: 'Genius', url: 'https://genius.com/x' }]);
+});
