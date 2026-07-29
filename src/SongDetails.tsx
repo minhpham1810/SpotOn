@@ -40,6 +40,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
     const [songInfo, setSongInfo] = useState<SongInfo | string | null>(null);
     const [isLoadingInfo, setIsLoadingInfo] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [researchError, setResearchError] = useState<string | null>(null);
     const [researchSteps, setResearchSteps] = useState<ResearchStepEvent[]>([]);
     const [accent, setAccent] = useState<CoverAccent>(DEFAULT_ACCENT);
     const [retryKey, setRetryKey] = useState(0);
@@ -54,6 +55,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
         const fetchSongDetails = async () => {
             if (!id) return;
             setError(null);
+            setResearchError(null);
             setSong(null);
             setSongInfo(null);
             setResearchSteps([]);
@@ -64,32 +66,33 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
                 if (controller.signal.aborted) return;
                 setSong(data);
                 extractCoverAccent(data.cover).then((result) => {
-                    if (!controller.signal.aborted) setAccent(result);
+                    if (controller.signal.aborted) return;
+                    setAccent(result);
                 });
 
                 setIsLoadingInfo(true);
                 try {
                     const info = await ResearchAgentAPI.researchSong(
                         { id, name: data.name, artist: data.artist, album: data.album },
-                        (step) => setResearchSteps((prev) => [...prev, step]),
+                        (step) => {
+                            if (controller.signal.aborted) return;
+                            setResearchSteps((prev) => [...prev, step]);
+                        },
                         controller.signal
                     );
+                    if (controller.signal.aborted) return;
                     setSongInfo(info);
                 } catch (error) {
-                    if (error instanceof Error && error.name === 'AbortError') {
-                        return;
-                    }
+                    if (controller.signal.aborted) return;
                     console.error('Error generating song info:', error);
+                    setResearchError('Unable to load additional song information.');
                     showToast('Unable to load song details at this time', 'error');
                 } finally {
-                    if (!controller.signal.aborted) {
-                        setIsLoadingInfo(false);
-                    }
+                    if (controller.signal.aborted) return;
+                    setIsLoadingInfo(false);
                 }
             } catch (error) {
-                if (error instanceof Error && error.name === 'AbortError') {
-                    return;
-                }
+                if (controller.signal.aborted) return;
                 console.error('Error fetching song details:', error);
                 setError('Failed to load song details');
                 showToast('Failed to load song details', 'error');
@@ -141,7 +144,19 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
                         />
                     </section>
                     <section aria-label="Song research report" className="song-shell pb-20">
-                        {isLoadingInfo ? <ResearchProgress steps={researchSteps} /> : typeof songInfo === 'string' ? (
+                        {isLoadingInfo ? <ResearchProgress steps={researchSteps} /> : researchError ? (
+                            <div className="rounded-2xl border border-red-400/20 bg-red-400/[0.06] p-7 text-center sm:p-9" role="alert">
+                                <p className="font-syne text-lg font-semibold text-white">Research is unavailable right now</p>
+                                <p className="mt-2 text-sm text-white/60">{researchError}</p>
+                                <button
+                                    type="button"
+                                    onClick={() => setRetryKey((value) => value + 1)}
+                                    className="mt-5 rounded-full border border-white/15 px-5 py-3 text-sm text-white/80"
+                                >
+                                    Try again
+                                </button>
+                            </div>
+                        ) : typeof songInfo === 'string' ? (
                 <div className="border-l-2 border-white/10 pl-5 py-1">
                     <p className="text-white/30 m-0 mb-2"
                        style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>

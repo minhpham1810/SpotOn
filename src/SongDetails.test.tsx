@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, Link } from 'react-router-dom';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -110,6 +110,70 @@ test('shows a themed unavailable panel when research returns no report', async (
   renderSongDetails();
 
   expect(await screen.findByText(/Additional song information is currently unavailable/i)).toBeInTheDocument();
+});
+
+test('shows an inline retry state when research fails', async () => {
+  researchSongMock
+    .mockRejectedValueOnce(new Error('research unavailable'))
+    .mockResolvedValueOnce(baseReport);
+  const user = userEvent.setup();
+  renderSongDetails();
+
+  await user.click(await screen.findByRole('button', { name: 'Try again' }));
+
+  expect(await screen.findByText('About this Song')).toBeInTheDocument();
+  expect(screen.queryByText(/Additional song information is currently unavailable/i)).not.toBeInTheDocument();
+});
+
+test('ignores stale research updates after navigating to another song', async () => {
+  const requests: { onStep: (step: { tool: string; status: string }) => void; resolve: (report: SongInfo) => void }[] = [];
+  getTrackDetailsMock.mockImplementation(async (id) => ({ ...trackFixture, id, name: `Song ${id}` }));
+  researchSongMock.mockImplementation((_track, onStep) => new Promise<SongInfo>((resolve) => {
+    requests.push({ onStep, resolve });
+  }));
+
+  render(
+    <ToastProvider>
+      <MemoryRouter initialEntries={['/song/1']}>
+        <Routes>
+          <Route
+            path="/song/:id"
+            element={
+              <>
+                <Link to="/song/2">Go to song 2</Link>
+                <SongDetails onAddToPlaylist={() => {}} onLogout={() => {}} />
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    </ToastProvider>
+  );
+
+  await screen.findByRole('heading', { name: 'Song 1' });
+  await waitFor(() => expect(requests).toHaveLength(1));
+  fireEvent.click(screen.getByText('Go to song 2'));
+  await screen.findByRole('heading', { name: 'Song 2' });
+  await waitFor(() => expect(requests).toHaveLength(2));
+
+  await act(async () => {
+    requests[0].onStep({ tool: 'old_stream', status: 'Stale first-song step' });
+  });
+
+  expect(screen.queryByText('Stale first-song step')).not.toBeInTheDocument();
+
+  await act(async () => {
+    requests[1].resolve({ ...baseReport, summary: 'Current second-song report.' });
+  });
+
+  expect(await screen.findByText('Current second-song report.')).toBeInTheDocument();
+
+  await act(async () => {
+    requests[0].resolve({ ...baseReport, summary: 'Stale first-song report.' });
+  });
+
+  expect(screen.queryByText('Stale first-song report.')).not.toBeInTheDocument();
+  expect(screen.getByText('Current second-song report.')).toBeInTheDocument();
 });
 
 test('exposes preview playback state through the hero button', async () => {
