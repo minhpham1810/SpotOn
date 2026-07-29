@@ -1,7 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  ArrowUpRight,
+  Minus,
+  Pause,
+  Play,
+  Plus,
+  SpeakerSlash,
+} from '@phosphor-icons/react';
 import { useToast } from './contexts/ToastContext';
 import { SpotifyTrack } from './types/spotify';
+import { useAudioPreview } from './components/song-details/useAudioPreview';
 
 interface TrackProps {
   track: SpotifyTrack;
@@ -11,165 +20,93 @@ interface TrackProps {
 }
 
 const Track: React.FC<TrackProps> = ({ track, onAdd, onRemove, isInPlaylist = false }) => {
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [hasAudioSupport] = useState(() => typeof Audio !== 'undefined');
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-    const navigate = useNavigate();
-    const { showToast } = useToast();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const handlePreviewError = useCallback(() => {
+    showToast('Unable to play this preview', 'error');
+  }, [showToast]);
+  const preview = useAudioPreview(track.preview_url, handlePreviewError);
+  const previewUnavailable = preview.state === 'unavailable';
+  const previewPlaying = preview.state === 'playing';
+  const previewLabel = previewUnavailable
+    ? `Preview unavailable for ${track.name}`
+    : previewPlaying
+      ? `Pause preview for ${track.name}`
+      : preview.state === 'paused'
+        ? `Resume preview for ${track.name}`
+        : `Play preview for ${track.name}`;
 
-    useEffect(() => {
-        if (!track.preview_url || !hasAudioSupport) return;
+  const openTrack = () => {
+    preview.stop();
+    navigate(`/song/${track.id}`);
+  };
 
-        const handleEnded = () => setIsPlaying(false);
-        const handleError = () => {
-            setIsPlaying(false);
-            setIsLoading(false);
-            showToast('Failed to load audio preview', 'error');
-        };
+  const handleAction = () => {
+    if (isInPlaylist) {
+      onRemove?.(track.id);
+    } else {
+      onAdd?.(track);
+    }
+  };
 
-        const audio = new Audio(track.preview_url);
-        audio.addEventListener('ended', handleEnded);
-        audio.addEventListener('error', handleError);
-        audioRef.current = audio;
-
-        return () => {
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.removeEventListener('ended', handleEnded);
-                audioRef.current.removeEventListener('error', handleError);
-                audioRef.current = null;
-            }
-        };
-    }, [track.preview_url, hasAudioSupport, showToast]);
-
-    const handlePlayPause = async (e: React.MouseEvent) => {
-        e.stopPropagation();
-
-        if (!track.preview_url) {
-            showToast('No preview available for this song', 'error');
-            return;
-        }
-
-        try {
-            setIsLoading(true);
-            document.querySelectorAll('audio').forEach(audio => {
-                if (audio !== audioRef.current) {
-                    audio.pause();
-                }
-            });
-
-            if (isPlaying) {
-                audioRef.current?.pause();
-                setIsPlaying(false);
-            } else {
-                await audioRef.current?.play();
-                setIsPlaying(true);
-            }
-        } catch (error) {
-            console.error('Playback error:', error);
-            showToast('Failed to play preview', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleTrackClick = () => {
-        if (audioRef.current) {
-            audioRef.current.pause();
-            setIsPlaying(false);
-        }
-        navigate(`/song/${track.id}`);
-    };
-
-    const handleAction = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (isInPlaylist) {
-            onRemove?.(track.id);
-        } else {
-            onAdd?.(track);
-        }
-    };
-
-    const baseButtonClasses = `
-        w-8 h-8 md:w-7 md:h-7 rounded-full flex items-center justify-center
-        cursor-pointer transition-all duration-200 text-lg md:text-base
-        border border-white/20 text-white disabled:opacity-50 disabled:cursor-wait
-        enabled:hover:scale-110 enabled:hover:shadow-lg enabled:hover:shadow-white/10
-        enabled:active:scale-95 enabled:active:shadow-md
-        backdrop-blur-sm bg-black/20
-    `;
-
-    return (
-        <div
-            onClick={handleTrackClick}
-            className="p-3 rounded-lg bg-white/[0.04] mb-2.5 flex items-center gap-4
-                     transition-all duration-300 cursor-pointer relative overflow-hidden
-                     hover:-translate-y-0.5 hover:bg-white/[0.07]
-                     hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]
-                     animate-fadeIn active:translate-y-0
-                     before:content-[''] before:absolute before:inset-0
-                     before:bg-gradient-to-r before:from-transparent before:to-primary/8
-                     before:opacity-0 before:transition-all before:duration-300
-                     hover:before:opacity-100
-                     group"
-        >
-            <div className="relative flex-shrink-0">
-                <img
-                    src={track.cover}
-                    alt={`${track.name} cover`}
-                    className="w-16 h-16 rounded-md object-cover
-                              shadow-lg transition-all duration-300
-                              group-hover:scale-105 relative z-10"
-                />
-                <div className="absolute inset-0 rounded-md bg-primary/0 group-hover:bg-primary/10
-                               blur-md scale-110 transition-all duration-300 group-hover:blur-lg" />
-            </div>
-
-            <div className="flex-grow text-left flex flex-col gap-0.5 min-w-0">
-                <h3 className="m-0 text-white font-semibold text-sm transition-colors duration-300
-                              group-hover:text-primary truncate"
-                    style={{ fontFamily: 'Syne, sans-serif' }}>
-                    {track.name}
-                </h3>
-                <p className="m-0 text-white/40 transition-colors duration-300
-                              group-hover:text-white/60 truncate"
-                   style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-                    {track.artist}
-                </p>
-                {!track.preview_url && (
-                    <span className="inline-block text-[10px] text-white/30 italic mt-0.5">
-                        No preview
-                    </span>
-                )}
-            </div>
-
-            <div className="flex gap-2 flex-shrink-0 opacity-0 translate-x-2 transition-all duration-300
-                          group-hover:opacity-100 group-hover:translate-x-0 md:opacity-100 md:translate-x-0">
-                {track.preview_url && hasAudioSupport && (
-                    <button
-                        className={`${baseButtonClasses} bg-primary/10 border-primary/50
-                                   enabled:hover:bg-primary enabled:hover:border-primary`}
-                        onClick={handlePlayPause}
-                        disabled={isLoading}
-                        title={isPlaying ? 'Pause preview' : 'Play preview'}
-                    >
-                        {isLoading ? '⌛' : isPlaying ? '⏸' : '▶'}
-                    </button>
-                )}
-                <button
-                    className={`${baseButtonClasses} text-base
-                              ${isInPlaylist
-                                ? 'border-white/20 enabled:hover:bg-red-500/80 enabled:hover:border-red-500 enabled:hover:rotate-45'
-                                : 'border-white/20 enabled:hover:bg-primary/80 enabled:hover:border-primary'}`}
-                    onClick={handleAction}
-                    title={isInPlaylist ? 'Remove from playlist' : 'Add to playlist'}
-                >
-                    {isInPlaylist ? '−' : '+'}
-                </button>
-            </div>
+  return (
+    <article className="search-track">
+      <div className="search-track__identity">
+        <button type="button" onClick={openTrack} className="search-track__cover-wrap" aria-label={`Open ${track.name} by ${track.artist}`}>
+          <img
+            src={track.cover}
+            alt=""
+            className="search-track__cover"
+          />
+          <span className="search-track__open-mark" aria-hidden="true">
+              <ArrowUpRight size={15} weight="bold" />
+            </span>
+        </button>
+        <div className="min-w-0 text-left">
+          <h3 className="truncate font-syne text-base font-bold tracking-[-0.015em] text-white">
+            <button type="button" onClick={openTrack} className="max-w-full truncate text-left transition-colors duration-300 hover:text-primary">
+              {track.name}
+            </button>
+          </h3>
+          <span className="mt-1 block truncate text-xs uppercase tracking-[0.13em] text-white/45">
+            {track.artist}
+          </span>
+          <span className="mt-1 block truncate text-xs text-white/30">{track.album}</span>
         </div>
-    );
+      </div>
+
+      <div className="search-track__actions">
+        <button
+          type="button"
+          onClick={() => void preview.toggle()}
+          disabled={previewUnavailable}
+          aria-label={previewLabel}
+          aria-pressed={previewUnavailable ? undefined : previewPlaying}
+          className="search-icon-action"
+        >
+          {previewUnavailable ? (
+            <SpeakerSlash size={17} weight="bold" aria-hidden="true" />
+          ) : previewPlaying ? (
+            <Pause size={17} weight="bold" aria-hidden="true" />
+          ) : (
+            <Play size={17} weight="bold" aria-hidden="true" />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={handleAction}
+          aria-label={isInPlaylist ? `Remove ${track.name} from playlist` : `Add ${track.name} to playlist`}
+          className="search-icon-action search-icon-action--primary"
+        >
+          {isInPlaylist ? (
+            <Minus size={17} weight="bold" aria-hidden="true" />
+          ) : (
+            <Plus size={17} weight="bold" aria-hidden="true" />
+          )}
+        </button>
+      </div>
+    </article>
+  );
 };
 
 export default Track;

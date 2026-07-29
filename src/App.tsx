@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { ArrowUpRight, BookOpenText, Headphones, Waveform } from '@phosphor-icons/react';
 import SearchBar from './SearchBar';
-import SearchResults from './SearchResults';
+import SearchResults, { SearchStatus } from './SearchResults';
 import Playlist from './Playlist';
 import SongDetails from './SongDetails';
 import Login from './Login';
@@ -19,6 +20,10 @@ const MainContent: React.FC = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [playlistName, setPlaylistName] = useState("My Playlist");
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchStatus, setSearchStatus] = useState<SearchStatus>('idle');
+    const [searchError, setSearchError] = useState<string | null>(null);
+    const searchRequestId = useRef(0);
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -71,20 +76,32 @@ const MainContent: React.FC = () => {
     }, [location, navigate, isAuthenticated, showToast]);
 
     const searchSpotify = async (query: string) => {
-        if (!query.trim()) {
+        const trimmedQuery = query.trim();
+        const requestId = searchRequestId.current + 1;
+        searchRequestId.current = requestId;
+
+        if (!trimmedQuery) {
             setSearchResults([]);
+            setSearchQuery('');
+            setSearchError(null);
+            setSearchStatus('idle');
             return;
         }
 
+        setSearchQuery(trimmedQuery);
+        setSearchStatus('loading');
+        setSearchError(null);
         try {
-            const results = await SpotifyAPI.searchTracks(query);
+            const results = await SpotifyAPI.searchTracks(trimmedQuery);
+            if (requestId !== searchRequestId.current) return;
             setSearchResults(results);
-            if (results.length === 0) {
-                showToast('No songs found', 'error');
-            }
+            setSearchStatus(results.length > 0 ? 'success' : 'empty');
         } catch (error) {
+            if (requestId !== searchRequestId.current) return;
             console.error('Search error:', error);
-            showToast('Failed to search songs', 'error');
+            setSearchResults([]);
+            setSearchStatus('error');
+            setSearchError('The Spotify catalog is temporarily unavailable. Try the same search again.');
             if (error instanceof Error && error.message === 'User not authenticated') {
                 setIsAuthenticated(false);
                 navigate('/login', { replace: true });
@@ -113,6 +130,9 @@ const MainContent: React.FC = () => {
         SpotifyAPI.logout();
         setIsAuthenticated(false);
         setSearchResults([]);
+        setSearchQuery('');
+        setSearchStatus('idle');
+        setSearchError(null);
         setPlaylist([]);
         showToast('Logged out successfully', 'success');
         navigate('/login', { replace: true });
@@ -141,53 +161,103 @@ const MainContent: React.FC = () => {
     }
 
     const isSongRoute = location.pathname.startsWith('/song/');
+    const hasSearch = searchStatus !== 'idle';
 
     return (
         <div
             data-testid="authenticated-shell"
             data-route-shell={isSongRoute ? 'song' : 'search'}
+            data-search-view={isSongRoute ? undefined : hasSearch ? 'results' : 'home'}
             className={
                 isSongRoute
                     ? 'min-h-[100dvh] bg-background text-white'
-                    : 'relative min-h-[100dvh] bg-gradient-to-b from-background to-background-elevated p-5 text-center text-white'
+                    : 'search-page'
             }
         >
             {!isSongRoute && (
                 <>
-                    <div className="absolute inset-x-0 top-0 h-[300px] bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
-                    <header className="max-w-[1200px] mx-auto mb-0 px-4 pt-6 pb-4 flex justify-between items-center relative z-10 md:flex-row md:gap-0 flex-col gap-4">
-                        <h1
-                            className="m-0 flex items-baseline gap-0 tracking-tight"
+                    <header className="search-shell search-topbar">
+                        <div
+                            className="font-syne text-[1.625rem] font-extrabold uppercase tracking-[0.04em]"
                             aria-label="SpotOn Music App"
-                            style={{ fontFamily: 'Syne, sans-serif' }}
                         >
-                            <span className="text-3xl md:text-4xl font-extrabold text-white uppercase tracking-wide">
-                                Spot
-                            </span>
-                            <span className="text-3xl md:text-4xl font-extrabold text-primary uppercase tracking-wide">
-                                On
-                            </span>
-                        </h1>
-                        <button
-                            className="text-white/40 text-sm cursor-pointer transition-all duration-300 hover:text-white relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-px after:bg-white after:transition-all after:duration-300 hover:after:w-full md:w-auto w-full"
-                            style={{ fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.05em' }}
-                            onClick={handleLogout}
-                        >
-                            logout
-                        </button>
+                            <span>Spot</span>
+                            <span className="text-primary">On</span>
+                        </div>
+                        <div className="flex items-center gap-5 sm:gap-7">
+                            <div className="hidden items-center gap-2 text-[0.6875rem] uppercase tracking-[0.13em] text-white/35 sm:flex">
+                                <span className="search-status-dot" aria-hidden="true" />
+                                Spotify connected
+                            </div>
+                            <button type="button" className="search-text-action" onClick={handleLogout}>
+                                Logout
+                            </button>
+                        </div>
                     </header>
-                    <div className="max-w-[1200px] mx-auto mb-8 px-4">
-                        <div className="h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-                    </div>
-                    <SearchBar onSearch={searchSpotify} />
+
+                    <section className={`search-shell search-hero ${hasSearch ? 'search-hero--active' : ''}`}>
+                        <div className="search-hero__copy">
+                            <p className="search-eyebrow">Music, researched in context</p>
+                            <h1 className={`${hasSearch ? 'max-w-none lg:text-5xl' : 'max-w-[13ch] lg:text-6xl'} font-syne text-4xl font-extrabold leading-[0.98] tracking-[-0.04em] text-white sm:text-5xl`}>
+                                {hasSearch ? 'Search the catalog.' : 'What do you want to understand?'}
+                            </h1>
+                            <p className="mt-5 max-w-[58ch] text-sm leading-relaxed text-white/50 sm:text-base">
+                                {hasSearch
+                                    ? `Explore matches for “${searchQuery}”, add a track to your playlist, or open its full research report.`
+                                    : 'Find any track, hear the available preview, and open a sourced report on the sound, story, and people behind it.'}
+                            </p>
+                            <div className="mt-8 max-w-[46rem]">
+                                <SearchBar onSearch={searchSpotify} isLoading={searchStatus === 'loading'} />
+                            </div>
+                        </div>
+
+                        <div className="search-hero__signal" aria-label="SpotOn research path">
+                            <div className="search-signal__orbit" aria-hidden="true">
+                                <div className="search-signal__disc">
+                                    <Waveform size={30} weight="bold" />
+                                </div>
+                            </div>
+                            <ol className="search-signal__steps">
+                                <li>
+                                    <span>01</span>
+                                    <div>
+                                        <Headphones size={17} weight="bold" aria-hidden="true" />
+                                        <p>Find the recording</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span>02</span>
+                                    <div>
+                                        <Waveform size={17} weight="bold" aria-hidden="true" />
+                                        <p>Read its sonic shape</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span>03</span>
+                                    <div>
+                                        <BookOpenText size={17} weight="bold" aria-hidden="true" />
+                                        <p>Trace the wider story</p>
+                                    </div>
+                                </li>
+                            </ol>
+                            <div className="search-signal__footer">
+                                <span>Search to begin</span>
+                                <ArrowUpRight size={15} weight="bold" aria-hidden="true" />
+                            </div>
+                        </div>
+                    </section>
                 </>
             )}
             <Routes>
                 <Route path="/" element={
-                    <div className="max-w-[1200px] mx-auto mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 px-4 animate-fadeIn">
+                    <main className="search-shell search-workspace">
                         <SearchResults
                             searchResults={searchResults}
                             onAddTrack={addToPlaylist}
+                            status={searchStatus}
+                            query={searchQuery}
+                            error={searchError}
+                            onRetry={() => void searchSpotify(searchQuery)}
                         />
                         <Playlist
                             name={playlistName}
@@ -196,7 +266,7 @@ const MainContent: React.FC = () => {
                             onRemoveTrack={removeFromPlaylist}
                             onClearPlaylist={clearPlaylist}
                         />
-                    </div>
+                    </main>
                 } />
                 <Route path="/song/:id" element={
                     <SongDetails onAddToPlaylist={addToPlaylist} onLogout={handleLogout} />

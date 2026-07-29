@@ -35,3 +35,28 @@ test('maps the Spotify preview URL into track details', async () => {
 
   expect(track.preview_url).toBe('https://cdn.example/preview.mp3');
 });
+
+test('maps preview URLs into search results', async () => {
+  vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({
+    tracks: {
+      items: [{
+        id: 'track-2',
+        name: 'Search Song',
+        artists: [{ name: 'Search Artist' }],
+        album: {
+          name: 'Search Album',
+          images: [{ url: 'https://cdn.example/search-cover.jpg' }],
+        },
+        preview_url: 'https://cdn.example/search-preview.mp3',
+      }],
+    },
+  }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  }));
+  const { default: SpotifyAPI } = await import('./SpotifyAPI');
+
+  const [track] = await SpotifyAPI.searchTracks('Search Song');
+
+  expect(track.preview_url).toBe('https://cdn.example/search-preview.mp3');
+});

@@ -1,120 +1,165 @@
-import React, { useState, useCallback, useMemo } from "react";
-import { debounce } from "./lib/debounce";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ArrowRight,
+  ClockCounterClockwise,
+  MagnifyingGlass,
+  SpinnerGap,
+  X,
+} from '@phosphor-icons/react';
 
 interface SearchBarProps {
   onSearch: (query: string) => void | Promise<void>;
+  isLoading?: boolean;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
-  const [query, setQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
-    const saved = localStorage.getItem("recentSearches");
-    return saved ? JSON.parse(saved) : [];
-  });
+const getSavedSearches = (): string[] => {
+  try {
+    const saved = localStorage.getItem('recentSearches');
+    const parsed: unknown = saved ? JSON.parse(saved) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((value): value is string => typeof value === 'string' && Boolean(value.trim())).slice(0, 5)
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+const SearchBar: React.FC<SearchBarProps> = ({ onSearch, isLoading = false }) => {
+  const [query, setQuery] = useState('');
+  const [recentSearches, setRecentSearches] = useState<string[]>(getSavedSearches);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPendingSearch = useCallback(() => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+  }, []);
+
+  useEffect(() => clearPendingSearch, [clearPendingSearch]);
 
   const updateRecentSearches = useCallback((searchQuery: string) => {
-    setRecentSearches((prevSearches) => {
-      const updatedSearches = [
+    setRecentSearches((previous) => {
+      const updated = [
         searchQuery,
-        ...prevSearches.filter((s) => s !== searchQuery),
+        ...previous.filter((savedQuery) => savedQuery.toLocaleLowerCase() !== searchQuery.toLocaleLowerCase()),
       ].slice(0, 5);
-      localStorage.setItem("recentSearches", JSON.stringify(updatedSearches));
-      return updatedSearches;
+      localStorage.setItem('recentSearches', JSON.stringify(updated));
+      return updated;
     });
   }, []);
 
-  const debouncedSearch = useCallback(
-    async (searchQuery: string) => {
-      if (searchQuery.trim()) {
-        setIsLoading(true);
-        try {
-          await onSearch(searchQuery);
-        } catch (error) {
-          console.error("Search error:", error);
-        }
-        setIsLoading(false);
-      }
-    },
-    [onSearch]
-  );
+  const runSearch = useCallback((searchQuery: string, saveToHistory = false) => {
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) {
+      void onSearch('');
+      return;
+    }
+    if (saveToHistory) updateRecentSearches(trimmedQuery);
+    void onSearch(trimmedQuery);
+  }, [onSearch, updateRecentSearches]);
 
-  const debouncedSearchHandler = useMemo(
-    () => debounce(debouncedSearch, 500),
-    [debouncedSearch]
-  );
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const nextQuery = event.target.value;
+    setQuery(nextQuery);
+    clearPendingSearch();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setQuery(value);
-    debouncedSearchHandler(value);
+    if (!nextQuery.trim()) {
+      runSearch('');
+      return;
+    }
+
+    debounceTimer.current = setTimeout(() => {
+      runSearch(nextQuery);
+      debounceTimer.current = null;
+    }, 500);
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    clearPendingSearch();
+    runSearch(query, true);
   };
 
   const handleRecentSearch = (searchQuery: string) => {
+    clearPendingSearch();
     setQuery(searchQuery);
-    onSearch(searchQuery);
+    runSearch(searchQuery, true);
   };
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && query.trim()) {
-      onSearch(query);
-      updateRecentSearches(query);
-    }
+
+  const handleClear = () => {
+    clearPendingSearch();
+    setQuery('');
+    runSearch('');
   };
+
+  const clearHistory = () => {
+    setRecentSearches([]);
+    localStorage.removeItem('recentSearches');
+  };
+
   return (
-    <div className="max-w-[700px] mx-auto px-4 md:px-4 relative">
-      <div className="relative flex items-center">
-        <input
-          type="text"
-          className="w-full py-4 px-12 md:px-14 border border-white/10 rounded-full
-                             bg-white/[0.04] text-white backdrop-blur-md transition-all duration-normal
-                             focus:outline-none focus:border-primary/60 focus:bg-white/[0.07]
-                             focus:shadow-[0_0_24px_rgba(29,185,84,0.12)]
-                             hover:border-white/15 hover:bg-white/[0.06]
-                             placeholder:text-white/25
-                             animate-[fadeIn_0.3s_ease-out]"
-          style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '15px' }}
-          placeholder="Search for songs, artists…"
-          value={query}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-        />
-        <span
-          className="absolute left-5 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none
-                                transition-all duration-normal group-focus-within:text-primary md:left-4
-                                transform group-focus-within:scale-110"
-        >
-          🔍
-        </span>
-        {isLoading && (
-          <div
-            className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5
-                                  border-2 border-white/10 border-t-primary rounded-full
-                                  animate-spin md:right-4"
-          ></div>
-        )}
-      </div>
+    <div className="search-composer">
+      <form onSubmit={handleSubmit} role="search" className="space-y-3">
+        <label htmlFor="catalog-search" className="search-eyebrow mb-0 block">
+          Find a song
+        </label>
+        <div className="search-composer__field">
+          <MagnifyingGlass size={21} weight="bold" aria-hidden="true" className="search-composer__icon" />
+          <input
+            id="catalog-search"
+            type="search"
+            className="search-composer__input"
+            placeholder="Song, artist, or album"
+            value={query}
+            onChange={handleInputChange}
+            aria-label="Search the Spotify catalog"
+            aria-describedby="catalog-search-help"
+            autoComplete="off"
+          />
+          {query && (
+            <button type="button" onClick={handleClear} className="search-composer__clear" aria-label="Clear search">
+              <X size={16} weight="bold" aria-hidden="true" />
+            </button>
+          )}
+          <button type="submit" className="search-composer__submit" disabled={!query.trim() || isLoading}>
+            {isLoading ? (
+              <SpinnerGap size={18} weight="bold" aria-hidden="true" className="animate-spin" />
+            ) : (
+              <ArrowRight size={18} weight="bold" aria-hidden="true" />
+            )}
+            <span className="sr-only">{isLoading ? 'Searching' : 'Search'}</span>
+          </button>
+        </div>
+        <p id="catalog-search-help" className="text-xs leading-relaxed text-white/35">
+          Results update as you type. Press Enter to keep a search in your history.
+        </p>
+      </form>
 
       {recentSearches.length > 0 && !query && (
-        <div className="mt-4 text-left px-4">
-          <h3 className="text-white/60 text-sm mb-2">Recent Searches</h3>
-          <div>
-            {recentSearches.map((search, index) => (
+        <section aria-labelledby="recent-searches-heading" className="mt-7">
+          <div className="mb-3 flex items-center justify-between gap-4">
+            <h2 id="recent-searches-heading" className="flex items-center gap-2 text-xs font-medium text-white/55">
+              <ClockCounterClockwise size={15} weight="bold" aria-hidden="true" />
+              Recent searches
+            </h2>
+            <button type="button" onClick={clearHistory} className="search-text-action min-h-8">
+              Clear history
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {recentSearches.map((search) => (
               <button
-                key={index}
-                className="inline-flex items-center m-1 px-4 py-2 bg-white/10
-                                          rounded-full text-white text-sm cursor-pointer
-                                          transition-all duration-fast hover:bg-white/20
-                                          hover:-translate-y-0.5 hover:shadow-lg
-                                          hover:shadow-primary/10 hover:border-primary/30
-                                          active:translate-y-0 active:shadow-md
-                                          border border-transparent"
+                key={search}
+                type="button"
+                className="search-chip"
                 onClick={() => handleRecentSearch(search)}
               >
                 {search}
               </button>
             ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );

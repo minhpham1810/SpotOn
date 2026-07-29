@@ -237,6 +237,7 @@ const SpotifyAPI = {
         name: string;
         artists: { name: string }[];
         album: { name: string; images: { url: string }[] };
+        preview_url?: string | null;
       }
 
       return data.tracks.items.map((track: RawSpotifyTrack): SpotifyTrack => ({
@@ -245,6 +246,7 @@ const SpotifyAPI = {
         artist: track.artists[0].name,
         album: track.album.name,
         cover: track.album.images[0]?.url || "default-cover.jpg",
+        preview_url: track.preview_url ?? null,
       }));
     } catch (error) {
       console.error("Search error:", error);
