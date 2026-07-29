@@ -37,25 +37,25 @@ const SonicFingerprintCard: React.FC<SonicFingerprintCardProps> = ({ sonicRead, 
   const chartAriaLabel = `Sonic fingerprint: ${AXES.map(
     (a) => `${a.label} ${Math.round(audioFeatures[a.key] * 100)}%`
   ).join(', ')}`;
+  const featureMeters = [
+    { label: 'Energy', value: audioFeatures.energy },
+    { label: 'Valence', value: audioFeatures.valence },
+    { label: 'Danceability', value: audioFeatures.danceability },
+    { label: 'Acousticness', value: audioFeatures.acousticness },
+    { label: 'Instrumentalness', value: audioFeatures.instrumentalness },
+  ].map((feature) => ({
+    ...feature,
+    percent: Math.round(feature.value * 100),
+  }));
 
   return (
-    <div className="song-card song-card--wide song-reveal" style={{ '--song-index': 1 } as React.CSSProperties}>
-      <div className="flex items-center justify-between mb-3">
-        <p
-          className="m-0"
-          style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--song-accent, #1DB954)' }}
-        >
-          Sonic Fingerprint
-        </p>
-        <span
-          className="text-white/30 text-[10px] uppercase tracking-widest"
-          style={{ fontFamily: 'DM Sans, sans-serif' }}
-        >
-          {sourceLabel}
-        </span>
+    <article className="song-card song-card--wide song-reveal" style={{ '--song-index': 1 } as React.CSSProperties}>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <p className="song-eyebrow mb-0">Sonic Fingerprint</p>
+        <span className="text-[0.625rem] uppercase tracking-[0.2em] text-white/35">{sourceLabel}</span>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 items-center">
-        <svg viewBox="0 0 200 200" className="w-full max-w-[200px] mx-auto" role="img" aria-label={chartAriaLabel}>
+      <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[17rem_1fr] lg:gap-12">
+        <svg viewBox="0 0 200 200" role="img" aria-label={chartAriaLabel} className="mx-auto w-full max-w-64">
           {[0.25, 0.5, 0.75, 1].map((ring) => (
             <polygon
               key={ring}
@@ -70,8 +70,8 @@ const SonicFingerprintCard: React.FC<SonicFingerprintCardProps> = ({ sonicRead, 
           ))}
           <polygon
             points={polygonPoints}
-            fill="var(--song-chip, rgba(29,185,84,0.18))"
-            stroke="var(--song-accent, #1DB954)"
+            fill="var(--song-chip)"
+            stroke="var(--song-accent)"
             strokeWidth={2}
           />
           {AXES.map((axis, i) => {
@@ -92,26 +92,42 @@ const SonicFingerprintCard: React.FC<SonicFingerprintCardProps> = ({ sonicRead, 
           })}
         </svg>
         <div>
-          <p className="text-white/75 text-sm leading-relaxed mb-4" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-            {sonicRead}
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <div className="flex flex-col gap-0.5 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
-              <span className="text-white/40 text-[9px] uppercase tracking-widest">Tempo</span>
-              <span className="text-white font-bold text-lg" style={{ fontFamily: 'Syne, sans-serif' }}>
-                {audioFeatures.tempo} <span className="text-white/40 text-xs font-normal">BPM</span>
-              </span>
-            </div>
-            <div className="flex flex-col gap-0.5 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
-              <span className="text-white/40 text-[9px] uppercase tracking-widest">Key</span>
-              <span className="text-white font-bold text-lg" style={{ fontFamily: 'Syne, sans-serif' }}>
-                {audioFeatures.key}
-              </span>
-            </div>
+          <p className="max-w-[65ch] text-sm leading-relaxed text-white/70">{sonicRead}</p>
+          <div className="mt-6 grid grid-cols-2 gap-px border-y border-white/[0.08] sm:grid-cols-5">
+            {featureMeters.map((feature) => (
+              <div
+                key={feature.label}
+                role="meter"
+                aria-label={feature.label}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={feature.percent}
+                className="px-3 py-4"
+                style={{ '--feature-scale': feature.value } as React.CSSProperties}
+              >
+                <span className="text-[0.625rem] uppercase tracking-[0.16em] text-white/35">{feature.label}</span>
+                <span className="mt-2 block font-syne text-lg text-white">{feature.percent}%</span>
+                <span className="mt-2 block h-1 overflow-hidden rounded-full bg-white/[0.08]">
+                  <span className="block h-full origin-left scale-x-[var(--feature-scale)] bg-[var(--song-accent)]" />
+                </span>
+              </div>
+            ))}
           </div>
+          <dl className="mt-6 grid grid-cols-2 divide-x divide-white/[0.08] border-y border-white/[0.08]">
+            <div className="py-4 pr-5">
+              <dt className="text-[0.625rem] uppercase tracking-[0.18em] text-white/35">Tempo</dt>
+              <dd className="mt-1 font-syne text-xl font-bold text-white">
+                {audioFeatures.tempo} <span className="text-xs font-normal text-white/40">BPM</span>
+              </dd>
+            </div>
+            <div className="py-4 pl-5">
+              <dt className="text-[0.625rem] uppercase tracking-[0.18em] text-white/35">Key</dt>
+              <dd className="mt-1 font-syne text-xl font-bold text-white">{audioFeatures.key}</dd>
+            </div>
+          </dl>
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 

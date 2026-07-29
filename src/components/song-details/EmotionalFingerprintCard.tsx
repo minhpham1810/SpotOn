@@ -9,42 +9,37 @@ const EmotionalFingerprintCard: React.FC<EmotionalFingerprintCardProps> = ({ emo
   if (!emotionalFingerprint || !Array.isArray(emotionalFingerprint.arc)) return null;
 
   return (
-    <div className="song-card song-card--wide song-reveal" style={{ '--song-index': 0 } as React.CSSProperties}>
-      <p
-        className="m-0 mb-3"
-        style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--song-accent, #1DB954)' }}
-      >
-        Emotional Fingerprint
-      </p>
-      <blockquote
-        className="m-0 mb-5 italic text-white text-xl md:text-2xl leading-snug"
-        style={{ fontFamily: 'Syne, sans-serif', fontWeight: 600 }}
-      >
-        <span style={{ color: 'var(--song-accent, #1DB954)' }}>&ldquo;</span>
+    <article className="song-card song-card--wide song-reveal" style={{ '--song-index': 0 } as React.CSSProperties}>
+      <p className="song-eyebrow">Emotional Fingerprint</p>
+      <blockquote className="max-w-[24ch] font-syne text-xl font-semibold italic leading-snug text-white sm:text-2xl lg:text-3xl">
+        <span className="text-[var(--song-accent)]" aria-hidden="true">
+          “
+        </span>
         {emotionalFingerprint.signatureMove}
       </blockquote>
-      <p className="text-white/30 text-[10px] uppercase tracking-widest mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-        The Journey
+      <p className="mt-8 text-[0.625rem] uppercase tracking-[0.24em] text-white/35">
+        The journey
       </p>
-      <ul className="space-y-1.5 mb-5">
-        {emotionalFingerprint.arc.map((beat, i) => (
-          <li key={i} className="flex items-start gap-2 text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-            <span className="mt-1 flex-shrink-0" style={{ color: 'var(--song-accent, #1DB954)' }}>
-              ·
+      <ol
+        aria-label="Emotional journey"
+        className="song-journey mt-4"
+        style={{ '--journey-steps': Math.max(1, emotionalFingerprint.arc.length) } as React.CSSProperties}
+      >
+        {emotionalFingerprint.arc.map((beat, index) => (
+          <li key={`${index}-${beat}`} data-testid="journey-step" className="song-journey__step">
+            <span className="song-journey__dot" aria-hidden="true" />
+            <span className="font-syne text-xs text-[var(--song-accent)]">
+              {String(index + 1).padStart(2, '0')}
             </span>
-            {beat}
+            <span className="text-sm leading-relaxed text-white/70">{beat}</span>
           </li>
         ))}
-      </ul>
-      <div className="pt-4 border-t border-white/10 flex flex-wrap items-baseline gap-2">
-        <span className="text-white/30 text-[10px] uppercase tracking-widest" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-          Reach for this when
-        </span>
-        <span className="text-white/80 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-          {emotionalFingerprint.reachForThisWhen}
-        </span>
+      </ol>
+      <div className="mt-8 flex flex-wrap items-baseline gap-2 border-t border-white/[0.08] pt-5">
+        <span className="text-[0.625rem] uppercase tracking-[0.22em] text-white/35">Reach for this when</span>
+        <span className="text-sm text-white/80">{emotionalFingerprint.reachForThisWhen}</span>
       </div>
-    </div>
+    </article>
   );
 };
 

@@ -262,6 +262,8 @@ test('renders the Emotional Fingerprint section first, above About this Song', a
   expect(await screen.findByText(/Opens guarded and restrained/i)).toBeInTheDocument();
   expect(screen.getByText(/The vocal cracks right on the word "gone"/i)).toBeInTheDocument();
   expect(screen.getByText(/You want to sit with something instead of getting over it/i)).toBeInTheDocument();
+  expect(screen.getByRole('list', { name: 'Emotional journey' })).toBeInTheDocument();
+  expect(screen.getAllByTestId('journey-step')).toHaveLength(3);
 
   const sectionLabels = screen.getAllByText(/Emotional Fingerprint|About this Song/i);
   expect(sectionLabels[0]).toHaveTextContent('Emotional Fingerprint');

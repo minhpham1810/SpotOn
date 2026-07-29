@@ -272,6 +272,35 @@
     @apply grid grid-cols-1 gap-5 md:grid-cols-2;
   }
 
+  .song-journey {
+    @apply relative grid grid-cols-1 gap-5 md:grid-flow-col md:auto-cols-fr md:gap-0;
+  }
+
+  .song-journey::before {
+    content: '';
+    @apply pointer-events-none absolute top-2 hidden h-px bg-[var(--song-border)] md:block;
+    left: calc(50% / var(--journey-steps));
+    right: calc(50% / var(--journey-steps));
+  }
+
+  .song-journey__step {
+    @apply relative grid grid-cols-[1rem_2rem_1fr] items-start gap-3 md:grid-cols-1 md:px-3 md:text-center;
+  }
+
+  .song-journey__step::before {
+    content: '';
+    @apply pointer-events-none absolute left-[0.34375rem] top-3 h-[calc(100%+1.25rem)] w-px bg-[var(--song-border)] md:hidden;
+  }
+
+  .song-journey__step:last-child::before {
+    content: none;
+  }
+
+  .song-journey__dot {
+    @apply relative z-10 mt-0.5 size-3 rounded-full border-2 bg-[#120f17] md:mx-auto md:mb-2;
+    border-color: var(--song-accent);
+  }
+
   .song-page :where(a, button),
   .song-page a::after {
     transition-property: transform, opacity;
