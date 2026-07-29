@@ -11,7 +11,7 @@ export default function SongDetailsHeader({ onBack, onLogout }: SongDetailsHeade
       <div className="flex items-center justify-between">
         <div className="font-syne text-[1.625rem] font-extrabold uppercase tracking-[0.04em]" aria-label="SpotOn">
           <span>Spot</span>
-          <span className="text-[var(--song-accent)] transition-colors duration-500">On</span>
+          <span className="text-[var(--song-accent)]">On</span>
         </div>
         <button type="button" onClick={onLogout} className="song-text-action">
           Logout
