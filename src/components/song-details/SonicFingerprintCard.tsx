@@ -68,9 +68,13 @@ const SonicFingerprintCard: React.FC<SonicFingerprintCardProps> = ({ sonicRead, 
   }));
 
   return (
-    <article className="song-card song-card--wide song-reveal" style={{ '--song-index': 1 } as React.CSSProperties}>
+    <article
+      className="song-card song-card--wide song-reveal"
+      style={{ '--song-index': 1 } as React.CSSProperties}
+      aria-labelledby="song-sonic-heading"
+    >
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <p className="song-eyebrow mb-0">Sonic Fingerprint</p>
+        <h2 id="song-sonic-heading" className="song-eyebrow mb-0">Sonic Fingerprint</h2>
         <span className="text-[0.625rem] uppercase tracking-[0.2em] text-white/35">{sourceLabel}</span>
       </div>
       <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[17rem_1fr] lg:gap-12">
@@ -113,8 +117,10 @@ const SonicFingerprintCard: React.FC<SonicFingerprintCardProps> = ({ sonicRead, 
           })}
         </svg>
         <div>
-          <p className="max-w-[65ch] text-sm leading-relaxed text-white/70">{sonicRead}</p>
-          <div className="mt-6 grid grid-cols-2 gap-px border-y border-white/[0.08] sm:grid-cols-5">
+          {typeof sonicRead === 'string' && sonicRead.trim() && (
+            <p className="max-w-[65ch] text-sm leading-relaxed text-white/70">{sonicRead.trim()}</p>
+          )}
+          <div className={`${typeof sonicRead === 'string' && sonicRead.trim() ? 'mt-6 ' : ''}grid grid-cols-2 gap-px border-y border-white/[0.08] sm:grid-cols-5`}>
             {featureMeters.map((feature) => (
               <div
                 key={feature.label}

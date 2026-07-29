@@ -8,11 +8,19 @@ interface GenreSourcesFooterProps {
 }
 
 const GenreSourcesFooter: React.FC<GenreSourcesFooterProps> = ({ genre, sources }) => {
-  const hasGenre = Array.isArray(genre) && genre.length > 0;
+  const validGenres = Array.isArray(genre)
+    ? genre
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : [];
+  const hasGenre = validGenres.length > 0;
   const validSources = Array.isArray(sources)
     ? sources.flatMap((source) => {
+        if (!source || typeof source.label !== 'string' || typeof source.url !== 'string') return [];
         const href = safeUrl(source.url);
-        return href ? [{ ...source, href }] : [];
+        const label = source.label.trim();
+        return href && label ? [{ label, url: source.url, href }] : [];
       })
     : [];
   const hasSources = validSources.length > 0;
@@ -22,26 +30,28 @@ const GenreSourcesFooter: React.FC<GenreSourcesFooterProps> = ({ genre, sources 
   return (
     <div className="song-card--wide grid grid-cols-1 gap-5 lg:grid-cols-2">
       {hasGenre && (
-        <div
+        <article
           className={`song-card song-reveal${hasSingleSection ? ' song-card--wide' : ''}`}
           style={{ '--song-index': 7 } as React.CSSProperties}
+          aria-labelledby="song-genre-heading"
         >
-          <p className="song-eyebrow">Genre</p>
+          <h2 id="song-genre-heading" className="song-eyebrow">Genre</h2>
           <div className="flex flex-wrap gap-2">
-            {genre.map((g, i) => (
+            {validGenres.map((g, i) => (
               <span key={i} className="song-chip">
                 {g}
               </span>
             ))}
           </div>
-        </div>
+        </article>
       )}
       {hasSources && (
-        <div
+        <article
           className={`song-card song-reveal${hasSingleSection ? ' song-card--wide' : ''}`}
           style={{ '--song-index': 8 } as React.CSSProperties}
+          aria-labelledby="song-sources-heading"
         >
-          <p className="song-eyebrow">Sources</p>
+          <h2 id="song-sources-heading" className="song-eyebrow">Sources</h2>
           <div className="flex flex-wrap gap-2">
             {validSources.map((source, i) => (
               <a
@@ -55,7 +65,7 @@ const GenreSourcesFooter: React.FC<GenreSourcesFooterProps> = ({ genre, sources 
               </a>
             ))}
           </div>
-        </div>
+        </article>
       )}
     </div>
   );

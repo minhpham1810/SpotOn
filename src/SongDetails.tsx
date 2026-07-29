@@ -19,9 +19,11 @@ import SongDetailsSkeleton from './components/song-details/SongDetailsSkeleton';
 import ResearchProgress from './components/song-details/ResearchProgress';
 import SongDetailsError from './components/song-details/SongDetailsError';
 import { useAudioPreview } from './components/song-details/useAudioPreview';
+import { hasSongInfoContent, normalizeSongInfo } from './lib/songInfoNormalizer';
 
 const DEFAULT_ACCENT: CoverAccent = {
   accent: '#1DB954',
+  foreground: '#0d0c0e',
   glow: 'rgba(29,185,84,0.4)',
   chip: 'rgba(29,185,84,0.12)',
   border: 'rgba(29,185,84,0.25)',
@@ -43,7 +45,8 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
     const [researchError, setResearchError] = useState<string | null>(null);
     const [researchSteps, setResearchSteps] = useState<ResearchStepEvent[]>([]);
     const [accent, setAccent] = useState<CoverAccent>(DEFAULT_ACCENT);
-    const [retryKey, setRetryKey] = useState(0);
+    const [trackRetryKey, setTrackRetryKey] = useState(0);
+    const [researchRetryKey, setResearchRetryKey] = useState(0);
     const handlePreviewError = useCallback(() => {
         showToast('Unable to play this preview', 'error');
     }, [showToast]);
@@ -64,34 +67,12 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
             try {
                 const data = await SpotifyAPI.getTrackDetails(id);
                 if (controller.signal.aborted) return;
+                setIsLoadingInfo(true);
                 setSong(data);
                 extractCoverAccent(data.cover).then((result) => {
                     if (controller.signal.aborted) return;
                     setAccent(result);
                 });
-
-                setIsLoadingInfo(true);
-                try {
-                    const info = await ResearchAgentAPI.researchSong(
-                        { id, name: data.name, artist: data.artist, album: data.album },
-                        (step) => {
-                            if (controller.signal.aborted) return;
-                            setResearchSteps((prev) => [...prev, step]);
-                        },
-                        controller.signal
-                    );
-                    if (controller.signal.aborted) return;
-                    setSongInfo(info);
-                } catch (error) {
-                    if (controller.signal.aborted) return;
-                    console.error('Error generating song info:', error);
-                    setResearchError('Unable to load additional song information.');
-                    showToast('Unable to load song details at this time', 'error');
-                } finally {
-                    if (!controller.signal.aborted) {
-                        setIsLoadingInfo(false);
-                    }
-                }
             } catch (error) {
                 if (controller.signal.aborted) return;
                 console.error('Error fetching song details:', error);
@@ -105,7 +86,43 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
         return () => {
             controller.abort();
         };
-    }, [id, retryKey, showToast]);
+    }, [id, trackRetryKey, showToast]);
+
+    useEffect(() => {
+        if (!id || !song || song.id !== id) return;
+        const controller = new AbortController();
+
+        const fetchResearch = async () => {
+            setResearchError(null);
+            setSongInfo(null);
+            setResearchSteps([]);
+            setIsLoadingInfo(true);
+            try {
+                const info = await ResearchAgentAPI.researchSong(
+                    { id, name: song.name, artist: song.artist, album: song.album },
+                    (step) => {
+                        if (controller.signal.aborted) return;
+                        setResearchSteps((prev) => [...prev, step]);
+                    },
+                    controller.signal
+                );
+                if (controller.signal.aborted) return;
+                setSongInfo(typeof info === 'string' ? info : normalizeSongInfo(info));
+            } catch (error) {
+                if (controller.signal.aborted) return;
+                console.error('Error generating song info:', error);
+                setResearchError('Unable to load additional song information.');
+                showToast('Unable to load song details at this time', 'error');
+            } finally {
+                if (!controller.signal.aborted) {
+                    setIsLoadingInfo(false);
+                }
+            }
+        };
+
+        void fetchResearch();
+        return () => controller.abort();
+    }, [id, researchRetryKey, showToast, song]);
 
     const handleSaveToPlaylist = () => {
         if (!song) return;
@@ -118,6 +135,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
 
     const cssVars = {
         '--song-accent': accent.accent,
+        '--song-accent-foreground': accent.foreground,
         '--song-glow': accent.glow,
         '--song-chip': accent.chip,
         '--song-border': accent.border,
@@ -131,7 +149,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
             ) : error ? (
                 <SongDetailsError
                     message={error}
-                    onRetry={() => setRetryKey((value) => value + 1)}
+                    onRetry={() => setTrackRetryKey((value) => value + 1)}
                     onBack={() => navigate('/')}
                 />
             ) : song ? (
@@ -144,28 +162,37 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
                     />
                     <section aria-label="Song research report" className="song-shell pb-20">
                         {isLoadingInfo ? <ResearchProgress steps={researchSteps} /> : researchError ? (
-                            <article className="song-card song-card--wide text-center" role="alert">
-                                <p className="font-syne text-lg font-semibold text-white">Research is unavailable right now</p>
+                            <article
+                                className="song-card song-card--wide text-center"
+                                role="alert"
+                                aria-labelledby="song-research-error-heading"
+                            >
+                                <h2 id="song-research-error-heading" className="font-syne text-lg font-semibold text-white">
+                                    Research is unavailable right now
+                                </h2>
                                 <p className="mt-2 text-sm text-white/60">{researchError}</p>
                                 <button
                                     type="button"
-                                    onClick={() => setRetryKey((value) => value + 1)}
+                                    onClick={() => setResearchRetryKey((value) => value + 1)}
                                     className="song-secondary-action mt-5"
                                 >
                                     Try again
                                 </button>
                             </article>
-                        ) : songInfo && typeof songInfo !== 'string' ? (
+                        ) : songInfo && typeof songInfo !== 'string' && hasSongInfoContent(songInfo) ? (
                             <div className="song-report-grid">
                                 <EmotionalFingerprintCard emotionalFingerprint={songInfo.emotionalFingerprint} />
                                 <SonicFingerprintCard sonicRead={songInfo.sonicRead} audioFeatures={songInfo.audioFeatures} />
-                                <article
-                                    className="song-card song-card--wide song-reveal"
-                                    style={{ '--song-index': 2 } as React.CSSProperties}
-                                >
-                                    <p className="song-eyebrow">About this Song</p>
-                                    <p className="max-w-[65ch] text-sm leading-relaxed text-white/70">{songInfo.summary}</p>
-                                </article>
+                                {songInfo.summary && (
+                                    <article
+                                        className="song-card song-card--wide song-reveal"
+                                        style={{ '--song-index': 2 } as React.CSSProperties}
+                                        aria-labelledby="song-about-heading"
+                                    >
+                                        <h2 id="song-about-heading" className="song-eyebrow">About this Song</h2>
+                                        <p className="max-w-[65ch] text-sm leading-relaxed text-white/70">{songInfo.summary}</p>
+                                    </article>
+                                )}
                                 <MusicalElementsCard musicalAnalysis={songInfo.musicalAnalysis} />
                                 <CulturalImpactCard culturalContext={songInfo.culturalContext} />
                                 <CreditsCard credits={songInfo.credits} />
@@ -173,8 +200,12 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
                                 <GenreSourcesFooter genre={songInfo.genre} sources={songInfo.sources} />
                             </div>
                         ) : (
-                            <article className="song-card song-card--wide" role="status">
-                                <p className="song-eyebrow">Info</p>
+                            <article
+                                className="song-card song-card--wide"
+                                role="status"
+                                aria-labelledby="song-info-heading"
+                            >
+                                <h2 id="song-info-heading" className="song-eyebrow">Info</h2>
                                 <p className="max-w-[65ch] text-sm leading-relaxed text-white/60">
                                     {typeof songInfo === 'string'
                                         ? songInfo

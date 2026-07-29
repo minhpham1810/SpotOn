@@ -1,4 +1,5 @@
 import type { SongInfo } from '../types/song-info';
+import { normalizeSongInfo } from '../lib/songInfoNormalizer';
 
 export interface ResearchTrack {
   id: string;
@@ -65,7 +66,7 @@ const ResearchAgentAPI = {
         if (event === 'step') {
           onStep(JSON.parse(data));
         } else if (event === 'report') {
-          return JSON.parse(data) as SongInfo;
+          return normalizeSongInfo(JSON.parse(data));
         } else if (event === 'error') {
           throw new Error(JSON.parse(data).message);
         }

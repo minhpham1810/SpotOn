@@ -60,19 +60,18 @@ export function useAudioPreview(
 
   useEffect(() => {
     stop();
-
-    if (!previewUrl) return stop;
-
-    audioRef.current = new Audio(previewUrl);
-
     return stop;
   }, [previewUrl, stop]);
 
   const toggle = useCallback(async () => {
     if (!previewUrl || pendingPlayRef.current) return;
 
-    const audio = audioRef.current;
-    if (!audio) return;
+    let audio = audioRef.current;
+    if (!audio) {
+      audio = new Audio(previewUrl);
+      audio.preload = 'none';
+      audioRef.current = audio;
+    }
 
     if (state === 'playing') {
       generationRef.current += 1;

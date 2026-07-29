@@ -50,12 +50,23 @@ vi.mock('./lib/coverAccentColor', () => ({
   }),
 }));
 
-function renderSongDetails() {
+function renderSongDetails(overrides: {
+  onAddToPlaylist?: (track: TrackDetails) => void;
+  onLogout?: () => void;
+} = {}) {
   return render(
     <ToastProvider>
       <MemoryRouter initialEntries={['/song/1']}>
         <Routes>
-          <Route path="/song/:id" element={<SongDetails onAddToPlaylist={() => {}} onLogout={() => {}} />} />
+          <Route
+            path="/song/:id"
+            element={
+              <SongDetails
+                onAddToPlaylist={overrides.onAddToPlaylist ?? (() => {})}
+                onLogout={overrides.onLogout ?? (() => {})}
+              />
+            }
+          />
         </Routes>
       </MemoryRouter>
     </ToastProvider>
@@ -127,14 +138,32 @@ test('shows a themed unavailable panel when research returns no report', async (
 });
 
 test('shows an inline retry state when research fails', async () => {
+  getTrackDetailsMock.mockResolvedValueOnce({
+    ...trackFixture,
+    preview_url: 'https://cdn.example/preview.mp3',
+  });
   researchSongMock
     .mockRejectedValueOnce(new Error('research unavailable'))
     .mockResolvedValueOnce(baseReport);
+  const audio = {
+    play: vi.fn().mockResolvedValue(undefined),
+    pause: vi.fn(),
+    currentTime: 0,
+    onended: null,
+    onerror: null,
+  };
+  vi.stubGlobal('Audio', vi.fn(function () { return audio; }));
   const user = userEvent.setup();
   renderSongDetails();
 
-  await user.click(await screen.findByRole('button', { name: 'Try again' }));
+  await screen.findByRole('button', { name: 'Try again' });
+  await user.click(screen.getByRole('button', { name: 'Preview' }));
+  expect(screen.getByRole('button', { name: 'Pause preview' })).toHaveAttribute('aria-pressed', 'true');
+  await user.click(screen.getByRole('button', { name: 'Try again' }));
 
+  expect(getTrackDetailsMock).toHaveBeenCalledOnce();
+  expect(screen.getByRole('heading', { name: 'Test Song' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Pause preview' })).toHaveAttribute('aria-pressed', 'true');
   expect(await screen.findByText('About this Song')).toBeInTheDocument();
   expect(screen.queryByText(/Additional song information is currently unavailable/i)).not.toBeInTheDocument();
 });
@@ -217,6 +246,11 @@ test('exposes preview playback state through the hero button', async () => {
 
   await user.click(button);
   expect(await screen.findByRole('button', { name: 'Pause preview' })).toHaveAttribute('aria-pressed', 'true');
+  await user.click(screen.getByRole('button', { name: 'Pause preview' }));
+  expect(screen.getByRole('button', { name: 'Resume preview' })).toHaveAttribute('aria-pressed', 'false');
+  await user.click(screen.getByRole('button', { name: 'Resume preview' }));
+  expect(audio.play).toHaveBeenCalledTimes(2);
+  expect(screen.getByRole('button', { name: 'Pause preview' })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('disables preview when Spotify provides no clip', async () => {
@@ -237,6 +271,67 @@ test('shows research trace steps while the agent is working', async () => {
 
   expect(await screen.findByRole('status', { name: 'Song research progress' })).toBeInTheDocument();
   expect(screen.getByText(/Reading lyrics annotations on Genius/i)).toBeInTheDocument();
+  expect(screen.getByRole('listitem')).toHaveAttribute('aria-current', 'step');
+});
+
+test('uses semantic headings for report cards and associates their regions', async () => {
+  researchSongMock.mockResolvedValue({
+    ...baseReport,
+    musicalAnalysis: { mood: 'Calm', keyElements: ['Piano'], soundscape: 'Wide' },
+    culturalContext: { era: '2020s', influence: 'Bedroom pop' },
+    credits: [{ name: 'A Producer', role: 'Producer' }],
+    findings: [{ text: 'A finding', confidence: 'verified', source: null }],
+    genre: ['Pop'],
+    sources: [{ label: 'Article', url: 'https://example.com/article' }],
+  });
+
+  renderSongDetails();
+
+  await screen.findByRole('heading', { level: 2, name: 'About this Song' });
+  const headings = screen.getAllByRole('heading', { level: 2 });
+  const names = headings.map((heading) => heading.textContent);
+  expect(names).toEqual(expect.arrayContaining([
+    'Emotional Fingerprint',
+    'About this Song',
+    'Musical Elements',
+    'Cultural Impact',
+    'Credits',
+    'Key Findings',
+    'Genre',
+    'Sources',
+  ]));
+  for (const heading of headings) {
+    const container = heading.closest('[aria-labelledby]');
+    expect(container).toHaveAttribute('aria-labelledby', heading.id);
+  }
+});
+
+test('filters malformed optional report sections without blank cards or crashes', async () => {
+  researchSongMock.mockResolvedValue({
+    summary: '',
+    emotionalFingerprint: { arc: 'bad', signatureMove: null, reachForThisWhen: [] },
+    musicalAnalysis: { mood: null, keyElements: [null, ''], soundscape: 42 },
+    sonicRead: 42,
+    audioFeatures: { source: 'spotify', tempo: 'fast' },
+    culturalContext: { era: null, influence: [], connections: [null] },
+    credits: [null, { name: '', role: '' }],
+    findings: [null, { text: '', confidence: 'unknown', source: { label: null, url: [] } }],
+    genre: [null, '', 42],
+    sources: [null, { label: '', url: '' }],
+  });
+
+  expect(() => renderSongDetails()).not.toThrow();
+
+  expect(await screen.findByText(/Additional song information is currently unavailable/i)).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { level: 2, name: /About|Emotional|Sonic|Musical|Cultural|Credits|Findings|Genre|Sources/i })).not.toBeInTheDocument();
+});
+
+test('adds the hero entrance class while preserving the overview landmark', async () => {
+  researchSongMock.mockResolvedValue(baseReport);
+  renderSongDetails();
+
+  const overview = await screen.findByRole('region', { name: 'Test Song overview' });
+  expect(overview.firstElementChild).toHaveClass('song-hero__content');
 });
 
 test('renders source links once the report arrives', async () => {
@@ -386,6 +481,7 @@ test('omits the Sonic Fingerprint card when audioFeatures is absent', async () =
 
 test('aborts the in-flight research stream when the song id changes or the component unmounts', async () => {
   const capturedSignals: (AbortSignal | undefined)[] = [];
+  getTrackDetailsMock.mockImplementation(async (id) => ({ ...trackFixture, id, name: `Song ${id}` }));
   researchSongMock.mockImplementation(
     (_track, _onStep, signal?: AbortSignal) =>
       new Promise(() => {

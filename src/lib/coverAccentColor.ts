@@ -1,5 +1,6 @@
 export interface CoverAccent {
   accent: string;
+  foreground: string;
   glow: string;
   chip: string;
   border: string;
@@ -7,17 +8,87 @@ export interface CoverAccent {
 
 const FALLBACK: CoverAccent = {
   accent: '#1DB954',
+  foreground: '#0d0c0e',
   glow: 'rgba(29,185,84,0.4)',
   chip: 'rgba(29,185,84,0.12)',
   border: 'rgba(29,185,84,0.25)',
 };
 
-function buildAccent(r: number, g: number, b: number): CoverAccent {
+interface Rgb {
+  r: number;
+  g: number;
+  b: number;
+}
+
+const PAGE_BACKGROUND: Rgb = { r: 13, g: 12, b: 14 };
+const LIGHT_FOREGROUND: Rgb = { r: 255, g: 255, b: 255 };
+const DARK_FOREGROUND: Rgb = PAGE_BACKGROUND;
+const MIN_UI_CONTRAST = 4.5;
+
+function solidColor({ r, g, b }: Rgb): string {
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function parseSolidColor(color: string): Rgb | null {
+  const hex = color.match(/^#([\da-f]{6})$/i);
+  if (hex) {
+    return {
+      r: Number.parseInt(hex[1].slice(0, 2), 16),
+      g: Number.parseInt(hex[1].slice(2, 4), 16),
+      b: Number.parseInt(hex[1].slice(4, 6), 16),
+    };
+  }
+  const rgb = color.match(/^rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)$/i);
+  return rgb ? { r: Number(rgb[1]), g: Number(rgb[2]), b: Number(rgb[3]) } : null;
+}
+
+function relativeLuminance({ r, g, b }: Rgb): number {
+  const channel = (value: number) => {
+    const normalized = value / 255;
+    return normalized <= 0.04045
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
+
+function rgbContrast(first: Rgb, second: Rgb): number {
+  const lighter = Math.max(relativeLuminance(first), relativeLuminance(second));
+  const darker = Math.min(relativeLuminance(first), relativeLuminance(second));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+export function contrastRatio(first: string, second: string): number {
+  const firstRgb = parseSolidColor(first);
+  const secondRgb = parseSolidColor(second);
+  return firstRgb && secondRgb ? rgbContrast(firstRgb, secondRgb) : 0;
+}
+
+function ensureUiContrast(color: Rgb): Rgb {
+  if (rgbContrast(color, PAGE_BACKGROUND) >= MIN_UI_CONTRAST) return color;
+
+  for (let step = 1; step <= 100; step += 1) {
+    const amount = step / 100;
+    const candidate = {
+      r: Math.round(color.r + (255 - color.r) * amount),
+      g: Math.round(color.g + (255 - color.g) * amount),
+      b: Math.round(color.b + (255 - color.b) * amount),
+    };
+    if (rgbContrast(candidate, PAGE_BACKGROUND) >= MIN_UI_CONTRAST) return candidate;
+  }
+  return LIGHT_FOREGROUND;
+}
+
+function buildAccent(raw: Rgb, readable: Rgb): CoverAccent {
+  const darkContrast = rgbContrast(readable, DARK_FOREGROUND);
+  const lightContrast = rgbContrast(readable, LIGHT_FOREGROUND);
+  const foreground = darkContrast >= lightContrast ? DARK_FOREGROUND : LIGHT_FOREGROUND;
   return {
-    accent: `rgb(${r}, ${g}, ${b})`,
-    glow: `rgba(${r}, ${g}, ${b}, 0.4)`,
-    chip: `rgba(${r}, ${g}, ${b}, 0.12)`,
-    border: `rgba(${r}, ${g}, ${b}, 0.25)`,
+    accent: solidColor(readable),
+    foreground: solidColor(foreground),
+    glow: `rgba(${raw.r}, ${raw.g}, ${raw.b}, 0.4)`,
+    chip: `rgba(${readable.r}, ${readable.g}, ${readable.b}, 0.12)`,
+    border: `rgba(${readable.r}, ${readable.g}, ${readable.b}, 0.25)`,
   };
 }
 
@@ -132,8 +203,9 @@ export async function extractCoverAccent(imageUrl: string): Promise<CoverAccent>
     }
 
     if (count === 0) return FALLBACK;
-    const avg = applyReadabilityFloor(Math.round(r / count), Math.round(g / count), Math.round(b / count));
-    return buildAccent(avg.r, avg.g, avg.b);
+    const raw = { r: Math.round(r / count), g: Math.round(g / count), b: Math.round(b / count) };
+    const floored = applyReadabilityFloor(raw.r, raw.g, raw.b);
+    return buildAccent(raw, ensureUiContrast(floored));
   } catch {
     return FALLBACK;
   }

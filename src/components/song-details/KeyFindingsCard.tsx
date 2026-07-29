@@ -36,13 +36,25 @@ const CONFIDENCE_ICON = {
 } satisfies Record<FindingConfidence, React.ComponentType<{ size?: number; weight?: 'bold'; 'aria-hidden'?: boolean }>>;
 
 const KeyFindingsCard: React.FC<KeyFindingsCardProps> = ({ findings }) => {
-  if (!Array.isArray(findings) || findings.length === 0) return null;
+  const validFindings = Array.isArray(findings)
+    ? findings.filter((finding) => (
+        finding
+        && typeof finding.text === 'string'
+        && finding.text.trim()
+        && finding.confidence in CONFIDENCE_LABEL
+      ))
+    : [];
+  if (validFindings.length === 0) return null;
 
   return (
-    <div className="song-card song-reveal" style={{ '--song-index': 6 } as React.CSSProperties}>
-      <p className="song-eyebrow">Key Findings</p>
+    <article
+      className="song-card song-reveal"
+      style={{ '--song-index': 6 } as React.CSSProperties}
+      aria-labelledby="song-findings-heading"
+    >
+      <h2 id="song-findings-heading" className="song-eyebrow">Key Findings</h2>
       <div className="divide-y divide-white/[0.08]">
-        {findings.map((finding, i) => {
+        {validFindings.map((finding, i) => {
           const href = finding.source ? safeUrl(finding.source.url) : undefined;
           const ConfidenceIcon = CONFIDENCE_ICON[finding.confidence];
           return (
@@ -82,7 +94,7 @@ const KeyFindingsCard: React.FC<KeyFindingsCardProps> = ({ findings }) => {
           );
         })}
       </div>
-    </div>
+    </article>
   );
 };
 

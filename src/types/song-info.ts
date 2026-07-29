@@ -47,13 +47,13 @@ export interface SongInfoAudioFeatures {
 }
 
 export interface SongInfo {
-  emotionalFingerprint: EmotionalFingerprint;
+  emotionalFingerprint?: EmotionalFingerprint;
   summary: string;
-  musicalAnalysis: SongInfoMusicalAnalysis;
+  musicalAnalysis?: SongInfoMusicalAnalysis;
   sonicRead: string;
   audioFeatures?: SongInfoAudioFeatures;
   genre: string[];
-  culturalContext: SongInfoCulturalContext;
+  culturalContext?: SongInfoCulturalContext;
   credits: SongInfoCredit[];
   findings: SongInfoFinding[];
   sources: SongInfoSource[];

@@ -1,5 +1,5 @@
 import { test, expect, vi, afterEach } from 'vitest';
-import { extractCoverAccent } from './coverAccentColor';
+import { contrastRatio, extractCoverAccent } from './coverAccentColor';
 
 const OriginalImage = global.Image;
 
@@ -64,8 +64,9 @@ test('extracts a dominant accent color from cover pixel data', async () => {
 
   const result = await extractCoverAccent('https://example.com/cover.jpg');
 
-  expect(result.accent).toBe('rgb(200, 50, 50)');
+  expect(contrastRatio(result.accent, '#0d0c0e')).toBeGreaterThanOrEqual(4.5);
   expect(result.glow).toBe('rgba(200, 50, 50, 0.4)');
+  expect(contrastRatio(result.accent, result.foreground)).toBeGreaterThanOrEqual(4.5);
 });
 
 test('clamps a dark, borderline-desaturated cover color to a readable lightness floor', async () => {
@@ -98,4 +99,30 @@ test('clamps a dark, borderline-desaturated cover color to a readable lightness 
   const lightness = (max + min) / 2;
   expect(lightness).toBeGreaterThanOrEqual(0.45);
   expect(lightness).toBeLessThanOrEqual(0.72);
+});
+
+test.each([
+  [0, 45, 210],
+  [110, 25, 180],
+  [30, 80, 90],
+])('adjusts saturated or dark rgb(%i, %i, %i) for WCAG UI contrast', async (red, green, blue) => {
+  // @ts-expect-error test stub
+  global.Image = LoadingImage;
+  const size = 32;
+  const data = new Uint8ClampedArray(size * size * 4);
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = red;
+    data[i + 1] = green;
+    data[i + 2] = blue;
+    data[i + 3] = 255;
+  }
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    drawImage: vi.fn(),
+    getImageData: vi.fn(() => ({ data })),
+  } as unknown as CanvasRenderingContext2D);
+
+  const result = await extractCoverAccent('https://example.com/cover.jpg');
+
+  expect(contrastRatio(result.accent, '#0d0c0e')).toBeGreaterThanOrEqual(4.5);
+  expect(contrastRatio(result.accent, result.foreground)).toBeGreaterThanOrEqual(4.5);
 });

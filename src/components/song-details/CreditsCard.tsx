@@ -6,13 +6,26 @@ interface CreditsCardProps {
 }
 
 const CreditsCard: React.FC<CreditsCardProps> = ({ credits }) => {
-  if (!Array.isArray(credits) || credits.length === 0) return null;
+  const validCredits = Array.isArray(credits)
+    ? credits.filter((credit) => (
+        credit
+        && typeof credit.name === 'string'
+        && credit.name.trim()
+        && typeof credit.role === 'string'
+        && credit.role.trim()
+      ))
+    : [];
+  if (validCredits.length === 0) return null;
 
   return (
-    <div className="song-card song-reveal" style={{ '--song-index': 5 } as React.CSSProperties}>
-      <p className="song-eyebrow">Credits</p>
+    <article
+      className="song-card song-reveal"
+      style={{ '--song-index': 5 } as React.CSSProperties}
+      aria-labelledby="song-credits-heading"
+    >
+      <h2 id="song-credits-heading" className="song-eyebrow">Credits</h2>
       <div className="divide-y divide-white/[0.08]">
-        {credits.map((credit, i) => (
+        {validCredits.map((credit, i) => (
           <div key={i} className="flex min-w-0 flex-col gap-0.5 py-4 first:pt-0 last:pb-0">
             <p className="text-sm font-medium text-white [overflow-wrap:anywhere]">
               {credit.name}
@@ -28,7 +41,7 @@ const CreditsCard: React.FC<CreditsCardProps> = ({ credits }) => {
           </div>
         ))}
       </div>
-    </div>
+    </article>
   );
 };
 

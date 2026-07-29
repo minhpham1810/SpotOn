@@ -14,10 +14,11 @@ type AudioMock = {
 };
 
 const audioInstances: AudioMock[] = [];
+let nextPlayPromise: Promise<void> | null = null;
 
 function createAudioMock(): AudioMock {
   return {
-    play: vi.fn().mockResolvedValue(undefined),
+    play: vi.fn(() => nextPlayPromise ?? Promise.resolve()),
     pause: vi.fn(),
     currentTime: 0,
     onended: null,
@@ -49,6 +50,7 @@ function Harness({ url }: { url?: string | null }) {
 
 beforeEach(() => {
   audioInstances.length = 0;
+  nextPlayPromise = null;
   onErrorMock.mockClear();
   vi.stubGlobal('Audio', vi.fn(function () {
     const audio = createAudioMock();
@@ -70,26 +72,45 @@ test('reports unavailable without a preview URL', () => {
 test('plays and pauses an available preview', async () => {
   const user = userEvent.setup();
   render(<Harness url="https://cdn.example/preview.mp3" />);
-  const audio = audioInstances[0];
+
+  expect(Audio).not.toHaveBeenCalled();
 
   await user.click(screen.getByRole('button', { name: 'Toggle' }));
+  const audio = audioInstances[0];
+  expect(Audio).toHaveBeenCalledOnce();
   expect(audio.play).toHaveBeenCalledOnce();
   expect(screen.getByText('playing')).toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Toggle' }));
   expect(audio.pause).toHaveBeenCalledOnce();
   expect(screen.getByText('paused')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Toggle' }));
+  expect(audio.play).toHaveBeenCalledTimes(2);
+  expect(screen.getByText('playing')).toBeInTheDocument();
 });
 
 test('stops the replaced audio and the active audio on unmount', () => {
   const { rerender, unmount } = render(<Harness url="https://cdn.example/one.mp3" />);
+  expect(audioInstances).toHaveLength(0);
+
+  rerender(<Harness url="https://cdn.example/two.mp3" />);
+  unmount();
+  expect(audioInstances).toHaveLength(0);
+});
+
+test('stops active audio when its URL is replaced and on unmount', async () => {
+  const user = userEvent.setup();
+  const { rerender, unmount } = render(<Harness url="https://cdn.example/one.mp3" />);
+  await user.click(screen.getByRole('button', { name: 'Toggle' }));
   const firstAudio = audioInstances[0];
 
   rerender(<Harness url="https://cdn.example/two.mp3" />);
-  const secondAudio = audioInstances[1];
   expect(firstAudio.pause).toHaveBeenCalledOnce();
   expect(firstAudio.currentTime).toBe(0);
 
+  await user.click(screen.getByRole('button', { name: 'Toggle' }));
+  const secondAudio = audioInstances[1];
   unmount();
   expect(secondAudio.pause).toHaveBeenCalledOnce();
   expect(secondAudio.currentTime).toBe(0);
@@ -98,11 +119,10 @@ test('stops the replaced audio and the active audio on unmount', () => {
 test('ignores a second toggle while play is pending', async () => {
   const user = userEvent.setup();
   const play = createDeferred();
+  nextPlayPromise = play.promise;
   render(<Harness url="https://cdn.example/preview.mp3" />);
-  const audio = audioInstances[0];
-  audio.play.mockReturnValue(play.promise);
-
   await user.click(screen.getByRole('button', { name: 'Toggle' }));
+  const audio = audioInstances[0];
   await user.click(screen.getByRole('button', { name: 'Toggle' }));
   expect(audio.play).toHaveBeenCalledOnce();
 
@@ -115,10 +135,8 @@ test('ignores a second toggle while play is pending', async () => {
 test('reports a rejected current play request and returns to idle', async () => {
   const user = userEvent.setup();
   const play = createDeferred();
+  nextPlayPromise = play.promise;
   render(<Harness url="https://cdn.example/preview.mp3" />);
-  const audio = audioInstances[0];
-  audio.play.mockReturnValue(play.promise);
-
   await user.click(screen.getByRole('button', { name: 'Toggle' }));
   await act(async () => {
     play.reject(new Error('blocked'));
@@ -131,9 +149,9 @@ test('reports a rejected current play request and returns to idle', async () => 
 test('handles current ended and error events', async () => {
   const user = userEvent.setup();
   render(<Harness url="https://cdn.example/preview.mp3" />);
-  const audio = audioInstances[0];
 
   await user.click(screen.getByRole('button', { name: 'Toggle' }));
+  const audio = audioInstances[0];
   act(() => audio.onended?.());
   expect(screen.getByText('idle')).toBeInTheDocument();
 
@@ -146,11 +164,10 @@ test('handles current ended and error events', async () => {
 test('ignores stale play resolution and event callbacks after a URL replacement', async () => {
   const user = userEvent.setup();
   const play = createDeferred();
+  nextPlayPromise = play.promise;
   const { rerender } = render(<Harness url="https://cdn.example/one.mp3" />);
-  const firstAudio = audioInstances[0];
-  firstAudio.play.mockReturnValue(play.promise);
-
   await user.click(screen.getByRole('button', { name: 'Toggle' }));
+  const firstAudio = audioInstances[0];
   const staleEnded = firstAudio.onended;
   const staleError = firstAudio.onerror;
   rerender(<Harness url="https://cdn.example/two.mp3" />);
@@ -172,11 +189,10 @@ test('ignores stale play resolution and event callbacks after a URL replacement'
 test('ignores stale play rejection and event callbacks after unmount', async () => {
   const user = userEvent.setup();
   const play = createDeferred();
+  nextPlayPromise = play.promise;
   const { unmount } = render(<Harness url="https://cdn.example/preview.mp3" />);
-  const audio = audioInstances[0];
-  audio.play.mockReturnValue(play.promise);
-
   await user.click(screen.getByRole('button', { name: 'Toggle' }));
+  const audio = audioInstances[0];
   const staleEnded = audio.onended;
   const staleError = audio.onerror;
   unmount();

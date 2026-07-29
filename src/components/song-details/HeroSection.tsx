@@ -25,7 +25,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ song, onAddToPlaylist, previe
 
   return (
     <section aria-label={`${song.name} overview`} className="song-shell song-hero">
-      <div className="grid grid-cols-1 items-center gap-9 lg:grid-cols-[minmax(240px,320px)_1fr] lg:gap-12">
+      <div className="song-hero__content grid grid-cols-1 items-center gap-9 lg:grid-cols-[minmax(240px,320px)_1fr] lg:gap-12">
         <div className="relative mx-auto w-full max-w-72 lg:max-w-none">
           <div className="absolute inset-[-7%] rounded-[1.75rem] bg-[var(--song-glow)] opacity-70 blur-3xl" aria-hidden="true" />
           <img

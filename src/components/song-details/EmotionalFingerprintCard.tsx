@@ -24,8 +24,12 @@ const EmotionalFingerprintCard: React.FC<EmotionalFingerprintCardProps> = ({ emo
   if (!signatureMove || !reachForThisWhen || journey.length === 0) return null;
 
   return (
-    <article className="song-card song-card--wide song-reveal" style={{ '--song-index': 0 } as React.CSSProperties}>
-      <p className="song-eyebrow">Emotional Fingerprint</p>
+    <article
+      className="song-card song-card--wide song-reveal"
+      style={{ '--song-index': 0 } as React.CSSProperties}
+      aria-labelledby="song-emotional-heading"
+    >
+      <h2 id="song-emotional-heading" className="song-eyebrow">Emotional Fingerprint</h2>
       <blockquote className="max-w-[24ch] font-syne text-xl font-semibold italic leading-snug text-white sm:text-2xl lg:text-3xl">
         <span className="text-[var(--song-accent)]" aria-hidden="true">
           “
