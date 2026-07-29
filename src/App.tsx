@@ -140,21 +140,21 @@ const MainContent: React.FC = () => {
         return <Login />;
     }
 
+    const isSongRoute = location.pathname.startsWith('/song/');
+
     return (
-        <div className="min-h-screen p-5 text-center font-sans text-white bg-gradient-to-b from-background to-background-elevated relative">
-            <div className="absolute inset-x-0 top-0 h-[300px] bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
-            {!isAuthenticated ? (
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/callback" element={
-                        <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-b from-background to-background-elevated z-50">
-                            <LoadingSpinner size="large" />
-                        </div>
-                    } />
-                    <Route path="*" element={<Login />} />
-                </Routes>
-            ) : (
+        <div
+            data-testid="authenticated-shell"
+            data-route-shell={isSongRoute ? 'song' : 'search'}
+            className={
+                isSongRoute
+                    ? 'min-h-[100dvh] bg-background text-white'
+                    : 'relative min-h-[100dvh] bg-gradient-to-b from-background to-background-elevated p-5 text-center text-white'
+            }
+        >
+            {!isSongRoute && (
                 <>
+                    <div className="absolute inset-x-0 top-0 h-[300px] bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
                     <header className="max-w-[1200px] mx-auto mb-0 px-4 pt-6 pb-4 flex justify-between items-center relative z-10 md:flex-row md:gap-0 flex-col gap-4">
                         <h1
                             className="m-0 flex items-baseline gap-0 tracking-tight"
@@ -180,31 +180,31 @@ const MainContent: React.FC = () => {
                         <div className="h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
                     </div>
                     <SearchBar onSearch={searchSpotify} />
-                    <Routes>
-                        <Route path="/" element={
-                            <div className="max-w-[1200px] mx-auto mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 px-4 animate-fadeIn">
-                                <SearchResults
-                                    searchResults={searchResults}
-                                    onAddTrack={addToPlaylist}
-                                />
-                                <Playlist
-                                    name={playlistName}
-                                    onNameChange={updatePlaylistName}
-                                    tracks={playlist}
-                                    onRemoveTrack={removeFromPlaylist}
-                                    onClearPlaylist={clearPlaylist}
-                                />
-                            </div>
-                        } />
-                        <Route path="/song/:id" element={
-                            <SongDetails onAddToPlaylist={addToPlaylist} />
-                        } />
-                        <Route path="*" element={
-                            <Navigate to="/" replace />
-                        } />
-                    </Routes>
                 </>
             )}
+            <Routes>
+                <Route path="/" element={
+                    <div className="max-w-[1200px] mx-auto mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 px-4 animate-fadeIn">
+                        <SearchResults
+                            searchResults={searchResults}
+                            onAddTrack={addToPlaylist}
+                        />
+                        <Playlist
+                            name={playlistName}
+                            onNameChange={updatePlaylistName}
+                            tracks={playlist}
+                            onRemoveTrack={removeFromPlaylist}
+                            onClearPlaylist={clearPlaylist}
+                        />
+                    </div>
+                } />
+                <Route path="/song/:id" element={
+                    <SongDetails onAddToPlaylist={addToPlaylist} onLogout={handleLogout} />
+                } />
+                <Route path="*" element={
+                    <Navigate to="/" replace />
+                } />
+            </Routes>
         </div>
     );
 };

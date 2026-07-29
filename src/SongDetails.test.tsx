@@ -40,7 +40,7 @@ function renderSongDetails() {
     <ToastProvider>
       <MemoryRouter initialEntries={['/song/1']}>
         <Routes>
-          <Route path="/song/:id" element={<SongDetails onAddToPlaylist={() => {}} />} />
+          <Route path="/song/:id" element={<SongDetails onAddToPlaylist={() => {}} onLogout={() => {}} />} />
         </Routes>
       </MemoryRouter>
     </ToastProvider>
@@ -209,7 +209,7 @@ test('aborts the in-flight research stream when the song id changes or the compo
             element={
               <>
                 <Link to="/song/2">Go to song 2</Link>
-                <SongDetails onAddToPlaylist={() => {}} />
+                <SongDetails onAddToPlaylist={() => {}} onLogout={() => {}} />
               </>
             }
           />

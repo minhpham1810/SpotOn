@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@upstash/redis": "^1.38.0",
     "js-sha256": "^1.0.0",
     "react": "^19.0.0",

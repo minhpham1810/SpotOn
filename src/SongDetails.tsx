@@ -15,6 +15,7 @@ import CulturalImpactCard from './components/song-details/CulturalImpactCard';
 import CreditsCard from './components/song-details/CreditsCard';
 import KeyFindingsCard from './components/song-details/KeyFindingsCard';
 import GenreSourcesFooter from './components/song-details/GenreSourcesFooter';
+import SongDetailsHeader from './components/song-details/SongDetailsHeader';
 
 const DEFAULT_ACCENT: CoverAccent = {
   accent: '#1DB954',
@@ -25,9 +26,10 @@ const DEFAULT_ACCENT: CoverAccent = {
 
 interface SongDetailsProps {
   onAddToPlaylist: (track: TrackDetails) => void;
+  onLogout: () => void;
 }
 
-const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
+const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { showToast } = useToast();
@@ -122,15 +124,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
 
     return (
         <div className="max-w-[1200px] mx-auto p-6 md:p-8 min-h-screen flex flex-col" style={cssVars}>
-            <button
-                className="text-white/40 text-sm cursor-pointer transition-all duration-300 mb-8 flex items-center
-                          gap-2 w-fit hover:text-white group"
-                style={{ fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.05em' }}
-                onClick={() => navigate('/')}
-            >
-                <span className="transition-transform duration-300 group-hover:-translate-x-1">←</span>
-                <span>Back</span>
-            </button>
+            <SongDetailsHeader onBack={() => navigate('/')} onLogout={onLogout} />
 
             <HeroSection song={song} onAddToPlaylist={handleSaveToPlaylist} />
 
