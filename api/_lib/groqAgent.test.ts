@@ -15,10 +15,13 @@ function groqResponse(message: Record<string, unknown>, finishReason: string) {
 const finalReportJson = JSON.stringify({
   summary: 'A summary.',
   musicalAnalysis: { mood: 'Calm', keyElements: ['piano'], soundscape: 'Warm' },
+  sonicRead: 'Warm and analog, built on tape hiss and a walking bassline.',
   genre: ['Jazz'],
   culturalContext: { era: '1960s', influence: 'Big', connections: [] },
   credits: [],
-  highlights: ['Great solo'],
+  findings: [
+    { text: 'The bridge modulates up a half step.', confidence: 'verified', source: { label: 'Genius', url: 'https://genius.com/x' } },
+  ],
   sources: [{ label: 'Genius', url: 'https://genius.com/x' }],
   emotionalFingerprint: {
     arc: ['Opens guarded and restrained', 'Builds into aching longing', 'Resolves in quiet acceptance'],
@@ -69,6 +72,11 @@ test('runResearchAgent calls a requested tool then returns the final parsed repo
   expect(steps).toEqual(['lookup_lyrics']);
   expect(report.summary).toBe('A summary.');
   expect(report.sources).toEqual([{ label: 'Genius', url: 'https://genius.com/x' }]);
+  expect(report.sonicRead).toBe('Warm and analog, built on tape hiss and a walking bassline.');
+  expect(report.findings).toEqual([
+    { text: 'The bridge modulates up a half step.', confidence: 'verified', source: { label: 'Genius', url: 'https://genius.com/x' } },
+  ]);
+  expect(report.audioFeatures).toBeUndefined();
   expect(report.emotionalFingerprint).toEqual({
     arc: ['Opens guarded and restrained', 'Builds into aching longing', 'Resolves in quiet acceptance'],
     signatureMove: 'The vocal cracks right on the word "gone" — that\'s not a flaw, that\'s the point.',
@@ -226,4 +234,91 @@ test('runResearchAgent caps web_search at 2 calls and short-circuits further req
   );
   expect(thirdCallResult?.content).toContain('web_search budget exhausted for this report (max 2 calls)');
   expect(report.summary).toBe('A summary.');
+});
+
+test('runResearchAgent uses measured Spotify audio features directly without asking the model to estimate', async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+
+  const report = await runResearchAgent({
+    track: { name: 'Song', artist: 'Artist' },
+    tools: [],
+    groqApiKey: 'key',
+    spotifyAudioFeatures: {
+      tempo: 118,
+      key: 'C# Major',
+      danceability: 0.7,
+      energy: 0.6,
+      valence: 0.5,
+      acousticness: 0.1,
+      instrumentalness: 0.02,
+    },
+  });
+
+  expect(report.audioFeatures).toEqual({
+    source: 'spotify',
+    tempo: 118,
+    key: 'C# Major',
+    danceability: 0.7,
+    energy: 0.6,
+    valence: 0.5,
+    acousticness: 0.1,
+    instrumentalness: 0.02,
+  });
+
+  const requestBody = JSON.parse((mockFetch.mock.calls[0][1] as { body: string }).body);
+  const systemMessage = requestBody.messages[0].content as string;
+  expect(systemMessage).not.toContain('audioFeatures" is your own estimate');
+});
+
+test('runResearchAgent asks the model to estimate audioFeatures when Spotify data is unavailable', async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  const estimatedReportJson = JSON.stringify({
+    ...JSON.parse(finalReportJson),
+    audioFeatures: {
+      tempo: 92,
+      key: 'A Minor',
+      danceability: 0.4,
+      energy: 0.35,
+      valence: 0.3,
+      acousticness: 0.6,
+      instrumentalness: 0.05,
+    },
+  });
+  mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: estimatedReportJson }, 'stop'));
+
+  const report = await runResearchAgent({
+    track: { name: 'Song', artist: 'Artist' },
+    tools: [],
+    groqApiKey: 'key',
+    spotifyAudioFeatures: null,
+  });
+
+  expect(report.audioFeatures).toEqual({
+    source: 'estimated',
+    tempo: 92,
+    key: 'A Minor',
+    danceability: 0.4,
+    energy: 0.35,
+    valence: 0.3,
+    acousticness: 0.6,
+    instrumentalness: 0.05,
+  });
+
+  const requestBody = JSON.parse((mockFetch.mock.calls[0][1] as { body: string }).body);
+  const systemMessage = requestBody.messages[0].content as string;
+  expect(systemMessage).toContain('audioFeatures" is your own estimate');
+});
+
+test('runResearchAgent omits audioFeatures when spotifyAudioFeatures is not provided', async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+
+  const report = await runResearchAgent({
+    track: { name: 'Song', artist: 'Artist' },
+    tools: [],
+    groqApiKey: 'key',
+  });
+
+  expect(report.audioFeatures).toBeUndefined();
 });

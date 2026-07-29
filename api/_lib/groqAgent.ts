@@ -1,4 +1,4 @@
-import type { SongInfo } from '../../src/types/song-info';
+import type { SongInfo, SongInfoAudioFeatures } from '../../src/types/song-info';
 
 export interface AgentTrack {
   name: string;
@@ -29,6 +29,7 @@ export interface RunResearchAgentOptions {
   groqApiKey: string;
   maxRounds?: number;
   onStep?: (event: AgentStepEvent) => void;
+  spotifyAudioFeatures?: Omit<SongInfoAudioFeatures, 'source'> | null;
 }
 
 const DEFAULT_MAX_ROUNDS = 6;
@@ -36,23 +37,35 @@ const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const WEB_SEARCH_TOOL_NAME = 'web_search';
 const MAX_WEB_SEARCH_CALLS = 2;
 
-const REPORT_INSTRUCTIONS = `When you have gathered enough information, respond with ONLY a JSON object (no markdown fences, no extra text) in this exact structure:
+function buildReportInstructions(needsAudioFeaturesEstimate: boolean): string {
+  const audioFeaturesSchemaLine = needsAudioFeaturesEstimate
+    ? `\n  "audioFeatures": { "tempo": 0, "key": "...", "danceability": 0.0, "energy": 0.0, "valence": 0.0, "acousticness": 0.0, "instrumentalness": 0.0 },`
+    : '';
+  const audioFeaturesGuidance = needsAudioFeaturesEstimate
+    ? `\n\n"audioFeatures" is your own estimate — Spotify's measured audio data wasn't available for this track. Give your best-judgment values: "tempo" in BPM, "key" as e.g. "C# Minor", and the rest on a 0-1 scale ("danceability", "energy", "valence", "acousticness", "instrumentalness"). Base it on the song's actual character, not generic genre defaults.`
+    : '';
+
+  return `When you have gathered enough information, respond with ONLY a JSON object (no markdown fences, no extra text) in this exact structure:
 {
   "emotionalFingerprint": { "arc": ["...", "...", "..."], "signatureMove": "...", "reachForThisWhen": "..." },
   "summary": "4-5 sentence narrative capturing the song's essence, emotional impact, and cultural significance",
   "musicalAnalysis": { "mood": "...", "keyElements": ["..."], "soundscape": "..." },
+  "sonicRead": "one sentence describing the song's sonic texture/production",${audioFeaturesSchemaLine}
   "genre": ["..."],
   "culturalContext": { "era": "...", "influence": "...", "connections": ["..."] },
   "credits": [{ "name": "...", "role": "...", "knownFor": "..." }],
-  "highlights": ["..."],
+  "findings": [{ "text": "...", "confidence": "verified" | "inferred" | "speculative", "source": { "label": "...", "url": "..." } | null }],
   "sources": [{ "label": "...", "url": "..." }]
 }
 Populate "sources" using the URLs and provider names (e.g. "Genius", the web page's site name) that appeared in tool results you actually used. If you have no grounded sources, return an empty array.
 
+For each finding in "findings", classify its confidence: "verified" if a tool result directly stated it, "inferred" if it's a reasonable synthesis of two or more grounded facts, "speculative" if it's your own musical/critical judgment with no direct source. Every "verified" and "inferred" finding must carry a real "source" from a tool result you used; "speculative" findings must set "source" to null — never fabricate a URL.
+
 "emotionalFingerprint" is interpretive, not descriptive — do not restate what the song is about (that's "summary"'s job). Instead:
 - "arc": 3-4 short beats describing how the feeling shifts as the song moves from start to end (e.g. guarded → building → open).
 - "signatureMove": name ONE specific musical or lyrical choice (not a vibe) responsible for the song's emotional effect — a vocal break, a delayed chorus, an unresolved chord, a repeated line landing differently the second time.
-- "reachForThisWhen": one sentence framing a moment or feeling this song answers, not a genre or activity tag.`;
+- "reachForThisWhen": one sentence framing a moment or feeling this song answers, not a genre or activity tag.${audioFeaturesGuidance}`;
+}
 
 interface GroqToolCall {
   id: string;
@@ -114,21 +127,34 @@ async function callGroq(
   return { message: choice.message, finishReason: choice.finish_reason };
 }
 
-function parseFinalReport(content: string): SongInfo {
+function parseFinalReport(
+  content: string,
+  spotifyAudioFeatures?: Omit<SongInfoAudioFeatures, 'source'> | null
+): SongInfo {
   const cleaned = content
     .trim()
     .replace(/^```(?:json)?/, '')
     .replace(/```$/, '')
     .trim();
   const parsed = JSON.parse(cleaned);
+
+  let audioFeatures: SongInfoAudioFeatures | undefined;
+  if (spotifyAudioFeatures) {
+    audioFeatures = { ...spotifyAudioFeatures, source: 'spotify' };
+  } else if (spotifyAudioFeatures === null && parsed.audioFeatures && typeof parsed.audioFeatures.tempo === 'number') {
+    audioFeatures = { ...parsed.audioFeatures, source: 'estimated' };
+  }
+
   return {
     emotionalFingerprint: parsed.emotionalFingerprint,
     summary: parsed.summary,
     musicalAnalysis: parsed.musicalAnalysis,
+    sonicRead: parsed.sonicRead ?? '',
+    audioFeatures,
     genre: parsed.genre ?? [],
     culturalContext: parsed.culturalContext,
     credits: parsed.credits ?? [],
-    highlights: parsed.highlights ?? [],
+    findings: parsed.findings ?? [],
     sources: parsed.sources ?? [],
   };
 }
@@ -144,7 +170,7 @@ export async function runResearchAgent(options: RunResearchAgentOptions): Promis
       role: 'system',
       content:
         'You are a music research agent. Use the available tools to gather grounded facts about the given song before writing your report. Call at most a couple of tools — enough to ground your claims, not exhaustively. ' +
-        REPORT_INSTRUCTIONS,
+        buildReportInstructions(options.spotifyAudioFeatures === null),
     },
     {
       role: 'user',
@@ -162,7 +188,7 @@ export async function runResearchAgent(options: RunResearchAgentOptions): Promis
       if (!message.content) {
         throw new Error('Groq returned an empty final response');
       }
-      return parseFinalReport(message.content);
+      return parseFinalReport(message.content, options.spotifyAudioFeatures);
     }
 
     for (const toolCall of message.tool_calls) {
@@ -210,5 +236,5 @@ export async function runResearchAgent(options: RunResearchAgentOptions): Promis
   if (!message.content) {
     throw new Error('Groq returned an empty final response after round cap');
   }
-  return parseFinalReport(message.content);
+  return parseFinalReport(message.content, options.spotifyAudioFeatures);
 }
