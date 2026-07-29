@@ -33,9 +33,7 @@ https://github.com/user-attachments/assets/16891384-79aa-47c3-94ad-b066b5e50ccd
 
 ### 🚀 Deployment
 
-- **AWS Elastic Beanstalk** – Full-stack deployment of Dockerized application
-- **Docker** – Containerized frontend with secure environment variable injection
-- **GitHub Actions** – CI/CD workflow for automated build and deployment
+- **Vercel** – Full-stack deployment of the Vite frontend and serverless research agent
 
 ### 🧱 Frontend
 
@@ -52,7 +50,6 @@ https://github.com/user-attachments/assets/16891384-79aa-47c3-94ad-b066b5e50ccd
 
 ### 🔐 Backend Architecture
 
-- **Docker/Nginx path** (AWS Elastic Beanstalk): Serves the static Vite frontend build only; no backend logic or serverless functions.
 - **Vercel deployment**: Includes the **Deep Research Agent Edge Function** (`api/research-song.ts`) that:
   - Runs the multi-step research agent (Llama 3.3 70B) with tool-calling
   - Manages server-only API credentials (Groq, Tavily, Genius, Spotify, Upstash Redis)
@@ -91,7 +88,7 @@ https://github.com/user-attachments/assets/16891384-79aa-47c3-94ad-b066b5e50ccd
 
 ## 🚀 Deployment
 
-SpotOn is deployed on **Vercel** for the full feature set (including the deep research agent). The **Docker/AWS Elastic Beanstalk** path serves the static Vite build only and does not run serverless functions — the research agent is unavailable on that deployment path. To use the research agent, deploy via Vercel and configure the server-only environment variables in your Vercel project settings.
+SpotOn is deployed on **Vercel** for the full feature set (including the deep research agent). Configure the server-only environment variables in your Vercel project settings to enable the research agent.
 
 ---
 
