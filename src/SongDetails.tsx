@@ -161,12 +161,12 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
                     </p>
                 </div>
             ) : songInfo ? (
-                <div className="space-y-5">
-                    <EmotionalFingerprintCard emotionalFingerprint={songInfo.emotionalFingerprint} />
-                    <SonicFingerprintCard sonicRead={songInfo.sonicRead} audioFeatures={songInfo.audioFeatures} />
-                    <div className="border-l-2 border-primary/30 pl-5 py-1">
-                        <p className="text-primary m-0 mb-3"
-                           style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="md:col-span-2"><EmotionalFingerprintCard emotionalFingerprint={songInfo.emotionalFingerprint} /></div>
+                    <div className="md:col-span-2"><SonicFingerprintCard sonicRead={songInfo.sonicRead} audioFeatures={songInfo.audioFeatures} /></div>
+                    <div className="border-l-2 pl-5 py-1" style={{ borderColor: 'var(--song-border, rgba(29,185,84,0.3))' }}>
+                        <p className="m-0 mb-3"
+                           style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--song-accent, #1DB954)' }}>
                             About this Song
                         </p>
                         <p className="text-white/75 leading-relaxed text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.summary}</p>
@@ -174,8 +174,8 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
                     <MusicalElementsCard musicalAnalysis={songInfo.musicalAnalysis} />
                     <CulturalImpactCard culturalContext={songInfo.culturalContext} />
                     <CreditsCard credits={songInfo.credits} />
-                    <KeyFindingsCard findings={songInfo.findings} />
-                    <GenreSourcesFooter genre={songInfo.genre} sources={songInfo.sources} />
+                    <div className="md:col-span-2"><KeyFindingsCard findings={songInfo.findings} /></div>
+                    <div className="md:col-span-2"><GenreSourcesFooter genre={songInfo.genre} sources={songInfo.sources} /></div>
                 </div>
             ) : (
                 <div className="border-l-2 border-white/10 pl-5 py-1">

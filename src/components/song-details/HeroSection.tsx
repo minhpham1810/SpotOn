@@ -7,7 +7,8 @@ interface HeroSectionProps {
 }
 
 const HeroSection: React.FC<HeroSectionProps> = ({ song, onAddToPlaylist }) => {
-  const releaseYear = song.releaseDate ? new Date(song.releaseDate).getFullYear() : '';
+  const parsedYear = song.releaseDate ? new Date(song.releaseDate).getFullYear() : NaN;
+  const releaseYear = Number.isFinite(parsedYear) ? parsedYear : '';
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8 mb-8 animate-fadeIn">
@@ -45,7 +46,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ song, onAddToPlaylist }) => {
           {song.artist}
         </p>
         <p className="m-0 text-white/40 text-sm">
-          {song.album} · {releaseYear}
+          {releaseYear ? `${song.album} · ${releaseYear}` : song.album}
         </p>
 
         <div className="flex flex-wrap items-center gap-3 mt-2">

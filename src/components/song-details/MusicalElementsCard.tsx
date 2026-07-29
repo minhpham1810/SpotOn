@@ -9,10 +9,10 @@ const MusicalElementsCard: React.FC<MusicalElementsCardProps> = ({ musicalAnalys
   if (!musicalAnalysis) return null;
 
   return (
-    <div className="border-l-2 border-primary/30 pl-5 py-1">
+    <div className="border-l-2 pl-5 py-1" style={{ borderColor: 'var(--song-border, rgba(29,185,84,0.3))' }}>
       <p
-        className="text-primary m-0 mb-3"
-        style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}
+        className="m-0 mb-3"
+        style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--song-accent, #1DB954)' }}
       >
         Musical Elements
       </p>
@@ -30,7 +30,7 @@ const MusicalElementsCard: React.FC<MusicalElementsCardProps> = ({ musicalAnalys
             Key Elements
           </p>
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-            {musicalAnalysis.keyElements.map((el, i) => (
+            {Array.isArray(musicalAnalysis.keyElements) && musicalAnalysis.keyElements.map((el, i) => (
               <li key={i} className="flex items-start gap-2 text-white/70 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                 <span className="mt-1 flex-shrink-0" style={{ color: 'var(--song-accent, #1DB954)' }}>
                   ·

@@ -19,7 +19,7 @@ const MAX_RADIUS = 80;
 
 function pointOnAxis(index: number, total: number, value: number): { x: number; y: number } {
   const angle = (Math.PI * 2 * index) / total - Math.PI / 2;
-  const radius = MAX_RADIUS * Math.max(0, Math.min(1, value));
+  const radius = MAX_RADIUS * Math.max(0, Math.min(1.2, value));
   return {
     x: CENTER + radius * Math.cos(angle),
     y: CENTER + radius * Math.sin(angle),
@@ -34,13 +34,16 @@ const SonicFingerprintCard: React.FC<SonicFingerprintCardProps> = ({ sonicRead, 
     return `${p.x},${p.y}`;
   }).join(' ');
   const sourceLabel = audioFeatures.source === 'spotify' ? 'Spotify Audio Features' : 'AI Estimate';
+  const chartAriaLabel = `Sonic fingerprint: ${AXES.map(
+    (a) => `${a.label} ${Math.round(audioFeatures[a.key] * 100)}%`
+  ).join(', ')}`;
 
   return (
-    <div className="border-l-2 border-primary/30 pl-5 py-1">
+    <div className="border-l-2 pl-5 py-1" style={{ borderColor: 'var(--song-border, rgba(29,185,84,0.3))' }}>
       <div className="flex items-center justify-between mb-3">
         <p
-          className="text-primary m-0"
-          style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}
+          className="m-0"
+          style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--song-accent, #1DB954)' }}
         >
           Sonic Fingerprint
         </p>
@@ -52,7 +55,7 @@ const SonicFingerprintCard: React.FC<SonicFingerprintCardProps> = ({ sonicRead, 
         </span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 items-center">
-        <svg viewBox="0 0 200 200" className="w-full max-w-[200px] mx-auto" aria-hidden="true">
+        <svg viewBox="0 0 200 200" className="w-full max-w-[200px] mx-auto" role="img" aria-label={chartAriaLabel}>
           {[0.25, 0.5, 0.75, 1].map((ring) => (
             <polygon
               key={ring}
@@ -71,6 +74,22 @@ const SonicFingerprintCard: React.FC<SonicFingerprintCardProps> = ({ sonicRead, 
             stroke="var(--song-accent, #1DB954)"
             strokeWidth={2}
           />
+          {AXES.map((axis, i) => {
+            const p = pointOnAxis(i, AXES.length, 1.15);
+            return (
+              <text
+                key={axis.key}
+                x={p.x}
+                y={p.y}
+                fill="rgba(255,255,255,0.5)"
+                fontSize="8"
+                textAnchor="middle"
+                dominantBaseline="middle"
+              >
+                {axis.label}
+              </text>
+            );
+          })}
         </svg>
         <div>
           <p className="text-white/75 text-sm leading-relaxed mb-4" style={{ fontFamily: 'DM Sans, sans-serif' }}>
