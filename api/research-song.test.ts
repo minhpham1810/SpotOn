@@ -22,15 +22,21 @@ vi.mock('./_lib/tools/spotifyTools', () => ({
 vi.mock('./_lib/tools/geniusTool', () => ({ geniusLookup: vi.fn() }));
 vi.mock('./_lib/tools/webSearchTool', () => ({ webSearch: vi.fn() }));
 
+const spotifyAudioFeaturesMock = vi.fn();
+vi.mock('./_lib/tools/spotifyAudioFeatures', () => ({
+  spotifyAudioFeatures: (...args: unknown[]) => spotifyAudioFeaturesMock(...args),
+}));
+
 import handler from './research-song';
 
 const emptyReport = {
   summary: '',
   musicalAnalysis: { mood: '', keyElements: [], soundscape: '' },
+  sonicRead: '',
   genre: [],
   culturalContext: { era: '', influence: '' },
   credits: [],
-  highlights: [],
+  findings: [],
   sources: [],
 };
 
@@ -50,6 +56,16 @@ beforeEach(() => {
   getCachedReportMock.mockReset();
   setCachedReportMock.mockReset();
   runResearchAgentMock.mockReset();
+  spotifyAudioFeaturesMock.mockReset();
+  spotifyAudioFeaturesMock.mockResolvedValue({
+    tempo: 100,
+    key: 'C Major',
+    danceability: 0.5,
+    energy: 0.5,
+    valence: 0.5,
+    acousticness: 0.5,
+    instrumentalness: 0.5,
+  });
 });
 
 test('returns a cached report immediately without running the agent', async () => {
@@ -88,4 +104,41 @@ test('returns a 400 response when required query params are missing', async () =
   const response = await handler(request);
 
   expect(response.status).toBe(400);
+});
+
+test('passes fetched Spotify audio features into the agent when available', async () => {
+  getCachedReportMock.mockResolvedValueOnce(null);
+  runResearchAgentMock.mockResolvedValueOnce({ ...emptyReport, summary: 'fresh' });
+
+  const request = new Request('https://example.com/api/research-song?trackId=3&name=Song&artist=Artist');
+  const response = await handler(request);
+  await readStreamText(response);
+
+  expect(runResearchAgentMock).toHaveBeenCalledWith(
+    expect.objectContaining({
+      spotifyAudioFeatures: {
+        tempo: 100,
+        key: 'C Major',
+        danceability: 0.5,
+        energy: 0.5,
+        valence: 0.5,
+        acousticness: 0.5,
+        instrumentalness: 0.5,
+      },
+    })
+  );
+});
+
+test('passes null for spotifyAudioFeatures when the Spotify call fails', async () => {
+  getCachedReportMock.mockResolvedValueOnce(null);
+  spotifyAudioFeaturesMock.mockRejectedValueOnce(new Error('403'));
+  runResearchAgentMock.mockResolvedValueOnce({ ...emptyReport, summary: 'fresh' });
+
+  const request = new Request('https://example.com/api/research-song?trackId=4&name=Song&artist=Artist');
+  const response = await handler(request);
+  await readStreamText(response);
+
+  expect(runResearchAgentMock).toHaveBeenCalledWith(
+    expect.objectContaining({ spotifyAudioFeatures: null })
+  );
 });

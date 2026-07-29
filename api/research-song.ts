@@ -3,6 +3,7 @@ import { getCachedReport, setCachedReport } from './_lib/cache';
 import { spotifySearch, spotifyArtistTopTracks } from './_lib/tools/spotifyTools';
 import { geniusLookup } from './_lib/tools/geniusTool';
 import { webSearch } from './_lib/tools/webSearchTool';
+import { spotifyAudioFeatures } from './_lib/tools/spotifyAudioFeatures';
 import type { SongInfo } from '../src/types/song-info';
 
 export const config = { runtime: 'edge' };
@@ -102,10 +103,24 @@ export default async function handler(request: Request): Promise<Response> {
           return;
         }
 
+        const spotifyCreds = {
+          clientId: process.env.SPOTIFY_CLIENT_ID as string,
+          clientSecret: process.env.SPOTIFY_CLIENT_SECRET as string,
+        };
+
+        let audioFeatures: Awaited<ReturnType<typeof spotifyAudioFeatures>> | null = null;
+        try {
+          audioFeatures = await spotifyAudioFeatures(trackId, spotifyCreds);
+        } catch (audioFeaturesError) {
+          console.error('spotifyAudioFeatures failed, the agent will estimate instead:', audioFeaturesError);
+          audioFeatures = null;
+        }
+
         const report: SongInfo = await runResearchAgent({
           track: { name: trackName, artist: artistName, album },
           tools: buildTools(),
           groqApiKey: process.env.GROQ_API_KEY as string,
+          spotifyAudioFeatures: audioFeatures,
           onStep: (step) => send('step', step),
         });
 
