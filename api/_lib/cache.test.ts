@@ -20,10 +20,11 @@ const sampleReport: SongInfo = {
   },
   summary: 'A great song.',
   musicalAnalysis: { mood: 'Upbeat', keyElements: [], soundscape: '' },
+  sonicRead: 'A rich sonic landscape.',
   genre: ['Pop'],
   culturalContext: { era: '2020s', influence: '' },
   credits: [],
-  highlights: [],
+  findings: [],
   sources: [],
 };
 
