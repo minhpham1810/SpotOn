@@ -314,6 +314,10 @@
     transition-property: transform, opacity;
   }
 
+  .song-page a::after {
+    background-color: var(--song-accent);
+  }
+
   .song-reveal {
     animation: songReveal 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: calc(var(--song-index, 0) * 75ms);
@@ -346,6 +350,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   .song-skeleton::after,
   .song-progress-mark,
   .song-reveal {
