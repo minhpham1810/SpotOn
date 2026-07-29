@@ -19,6 +19,7 @@
 
 # superpowers materials (local only, not committed)
 /docs/superpowers/
+/.worktrees/
 
 # misc
 .DS_Store
