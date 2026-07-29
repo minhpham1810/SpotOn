@@ -76,7 +76,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ song, onAddToPlaylist, previe
             aria-pressed={previewUnavailable ? undefined : previewPlaying}
             aria-label={previewLabel}
             onClick={onTogglePreview}
-            className="song-secondary-action"
+            className="song-secondary-action inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/5 border border-white/15 text-white text-xs font-medium cursor-pointer hover:bg-white/10 transition-colors disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-white/5"
           >
             {previewUnavailable ? <SpeakerSlash /> : previewPlaying ? <Pause /> : <Play />}
             <span>{previewLabel}</span>

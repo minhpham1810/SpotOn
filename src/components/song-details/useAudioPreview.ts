@@ -13,12 +13,27 @@ export function useAudioPreview(
   onError: () => void
 ): AudioPreviewController {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const generationRef = useRef(0);
+  const pendingPlayRef = useRef<symbol | null>(null);
+  const activePlaybackRef = useRef<symbol | null>(null);
   const [state, setState] = useState<AudioPreviewState>(previewUrl ? 'idle' : 'unavailable');
 
+  const isCurrentPlayback = useCallback((audio: HTMLAudioElement, generation: number, token: symbol) => (
+    generationRef.current === generation
+    && audioRef.current === audio
+    && activePlaybackRef.current === token
+  ), []);
+
   const stop = useCallback(() => {
+    generationRef.current += 1;
+    pendingPlayRef.current = null;
+    activePlaybackRef.current = null;
+
     const audio = audioRef.current;
     if (!audio) return;
 
+    audio.onended = null;
+    audio.onerror = null;
     audio.pause();
     audio.currentTime = 0;
     audioRef.current = null;
@@ -39,30 +54,57 @@ export function useAudioPreview(
   }, [previewUrl, stop]);
 
   const toggle = useCallback(async () => {
-    if (!previewUrl) return;
+    if (!previewUrl || pendingPlayRef.current) return;
+
+    const audio = audioRef.current;
+    if (!audio) return;
 
     if (state === 'playing') {
-      audioRef.current?.pause();
+      generationRef.current += 1;
+      pendingPlayRef.current = null;
+      activePlaybackRef.current = null;
+      audio.onended = null;
+      audio.onerror = null;
+      audio.pause();
       setState('paused');
       return;
     }
 
-    const audio = audioRef.current ?? new Audio(previewUrl);
-    audioRef.current = audio;
-    audio.onended = () => setState('idle');
+    const generation = generationRef.current;
+    const token = Symbol('audio-preview-playback');
+    pendingPlayRef.current = token;
+    activePlaybackRef.current = token;
+    audio.onended = () => {
+      if (!isCurrentPlayback(audio, generation, token)) return;
+
+      pendingPlayRef.current = null;
+      activePlaybackRef.current = null;
+      setState('idle');
+    };
     audio.onerror = () => {
+      if (!isCurrentPlayback(audio, generation, token)) return;
+
+      pendingPlayRef.current = null;
+      activePlaybackRef.current = null;
       setState('idle');
       onError();
     };
 
     try {
       await audio.play();
+      if (!isCurrentPlayback(audio, generation, token) || pendingPlayRef.current !== token) return;
+
+      pendingPlayRef.current = null;
       setState('playing');
     } catch {
+      if (!isCurrentPlayback(audio, generation, token) || pendingPlayRef.current !== token) return;
+
+      pendingPlayRef.current = null;
+      activePlaybackRef.current = null;
       setState('idle');
       onError();
     }
-  }, [onError, previewUrl, state]);
+  }, [isCurrentPlayback, onError, previewUrl, state]);
 
   return { state, toggle, stop };
 }
