@@ -70,7 +70,7 @@ const KeyFindingsCard: React.FC<KeyFindingsCardProps> = ({ findings }) => {
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 border-b border-white/15 text-xs text-white/50 transition-colors"
+                      className="inline-flex items-center gap-1 border-b border-white/15 text-xs text-white/50"
                     >
                       <span>{finding.source.label}</span>
                       <ArrowUpRight size={13} weight="bold" aria-hidden="true" />

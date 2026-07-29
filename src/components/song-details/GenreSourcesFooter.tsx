@@ -9,13 +9,23 @@ interface GenreSourcesFooterProps {
 
 const GenreSourcesFooter: React.FC<GenreSourcesFooterProps> = ({ genre, sources }) => {
   const hasGenre = Array.isArray(genre) && genre.length > 0;
-  const hasSources = Array.isArray(sources) && sources.length > 0;
+  const validSources = Array.isArray(sources)
+    ? sources.flatMap((source) => {
+        const href = safeUrl(source.url);
+        return href ? [{ ...source, href }] : [];
+      })
+    : [];
+  const hasSources = validSources.length > 0;
+  const hasSingleSection = hasGenre !== hasSources;
   if (!hasGenre && !hasSources) return null;
 
   return (
     <div className="song-card--wide grid grid-cols-1 gap-5 md:grid-cols-2">
       {hasGenre && (
-        <div className="song-card song-reveal" style={{ '--song-index': 7 } as React.CSSProperties}>
+        <div
+          className={`song-card song-reveal${hasSingleSection ? ' song-card--wide' : ''}`}
+          style={{ '--song-index': 7 } as React.CSSProperties}
+        >
           <p className="song-eyebrow">Genre</p>
           <div className="flex flex-wrap gap-2">
             {genre.map((g, i) => (
@@ -27,24 +37,23 @@ const GenreSourcesFooter: React.FC<GenreSourcesFooterProps> = ({ genre, sources 
         </div>
       )}
       {hasSources && (
-        <div className="song-card song-reveal" style={{ '--song-index': 8 } as React.CSSProperties}>
+        <div
+          className={`song-card song-reveal${hasSingleSection ? ' song-card--wide' : ''}`}
+          style={{ '--song-index': 8 } as React.CSSProperties}
+        >
           <p className="song-eyebrow">Sources</p>
           <div className="flex flex-wrap gap-2">
-            {sources.map((source, i) => {
-              const href = safeUrl(source.url);
-              if (!href) return null;
-              return (
-                <a
-                  key={i}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="song-chip transition-colors"
-                >
-                  {source.label}
-                </a>
-              );
-            })}
+            {validSources.map((source, i) => (
+              <a
+                key={i}
+                href={source.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="song-chip"
+              >
+                {source.label}
+              </a>
+            ))}
           </div>
         </div>
       )}

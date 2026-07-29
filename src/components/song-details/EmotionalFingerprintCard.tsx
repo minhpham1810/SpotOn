@@ -9,7 +9,7 @@ const EmotionalFingerprintCard: React.FC<EmotionalFingerprintCardProps> = ({ emo
   if (!emotionalFingerprint || !Array.isArray(emotionalFingerprint.arc)) return null;
 
   return (
-    <div className="border-l-2 pl-5 py-1" style={{ borderColor: 'var(--song-border, rgba(29,185,84,0.3))' }}>
+    <div className="song-card song-card--wide song-reveal" style={{ '--song-index': 0 } as React.CSSProperties}>
       <p
         className="m-0 mb-3"
         style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--song-accent, #1DB954)' }}

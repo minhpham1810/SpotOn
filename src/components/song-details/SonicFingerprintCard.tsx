@@ -39,7 +39,7 @@ const SonicFingerprintCard: React.FC<SonicFingerprintCardProps> = ({ sonicRead, 
   ).join(', ')}`;
 
   return (
-    <div className="border-l-2 pl-5 py-1" style={{ borderColor: 'var(--song-border, rgba(29,185,84,0.3))' }}>
+    <div className="song-card song-card--wide song-reveal" style={{ '--song-index': 1 } as React.CSSProperties}>
       <div className="flex items-center justify-between mb-3">
         <p
           className="m-0"
