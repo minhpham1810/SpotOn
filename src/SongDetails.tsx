@@ -6,6 +6,22 @@ import SpotifyAPI from './api/SpotifyAPI';
 import ResearchAgentAPI, { ResearchStepEvent } from './api/ResearchAgentAPI';
 import { TrackDetails } from './types/spotify';
 import { SongInfo } from './types/song-info';
+import { extractCoverAccent, type CoverAccent } from './lib/coverAccentColor';
+import HeroSection from './components/song-details/HeroSection';
+import EmotionalFingerprintCard from './components/song-details/EmotionalFingerprintCard';
+import SonicFingerprintCard from './components/song-details/SonicFingerprintCard';
+import MusicalElementsCard from './components/song-details/MusicalElementsCard';
+import CulturalImpactCard from './components/song-details/CulturalImpactCard';
+import CreditsCard from './components/song-details/CreditsCard';
+import KeyFindingsCard from './components/song-details/KeyFindingsCard';
+import GenreSourcesFooter from './components/song-details/GenreSourcesFooter';
+
+const DEFAULT_ACCENT: CoverAccent = {
+  accent: '#1DB954',
+  glow: 'rgba(29,185,84,0.4)',
+  chip: 'rgba(29,185,84,0.12)',
+  border: 'rgba(29,185,84,0.25)',
+};
 
 interface SongDetailsProps {
   onAddToPlaylist: (track: TrackDetails) => void;
@@ -20,6 +36,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
     const [isLoadingInfo, setIsLoadingInfo] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [researchSteps, setResearchSteps] = useState<ResearchStepEvent[]>([]);
+    const [accent, setAccent] = useState<CoverAccent>(DEFAULT_ACCENT);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -29,6 +46,10 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
             try {
                 const data = await SpotifyAPI.getTrackDetails(id);
                 setSong(data);
+                setAccent(DEFAULT_ACCENT);
+                extractCoverAccent(data.cover).then((result) => {
+                    if (!controller.signal.aborted) setAccent(result);
+                });
 
                 setIsLoadingInfo(true);
                 setResearchSteps([]);
@@ -92,167 +113,15 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
         return <div className="p-8 text-center text-white/70">Loading...</div>;
     }
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    };
-
-    type InfoSection = { label: string; content: React.ReactNode };
-
-    const infoSections = typeof songInfo === 'object' && songInfo !== null
-        ? ([
-            songInfo.emotionalFingerprint && Array.isArray(songInfo.emotionalFingerprint.arc) && {
-                label: 'Emotional Fingerprint',
-                content: (
-                    <div className="space-y-4">
-                        <div>
-                            <p className="text-white/30 text-[10px] uppercase tracking-widest mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>The Journey</p>
-                            <ul className="space-y-1.5">
-                                {songInfo.emotionalFingerprint.arc.map((beat, i) => (
-                                    <li key={i} className="flex items-start gap-2 text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                                        <span className="text-primary mt-1 flex-shrink-0">·</span>{beat}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div>
-                            <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>The Signature Move</p>
-                            <p className="text-white/75 text-sm leading-relaxed italic" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.emotionalFingerprint.signatureMove}</p>
-                        </div>
-                        <div>
-                            <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>Reach for This When</p>
-                            <p className="text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.emotionalFingerprint.reachForThisWhen}</p>
-                        </div>
-                    </div>
-                )
-            },
-            {
-                label: 'About this Song',
-                content: <p className="text-white/75 leading-relaxed text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.summary}</p>
-            },
-            songInfo.musicalAnalysis && {
-                label: 'Musical Elements',
-                content: (
-                    <div className="space-y-4">
-                        <div>
-                            <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>Mood</p>
-                            <p className="text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.musicalAnalysis.mood}</p>
-                        </div>
-                        <div>
-                            <p className="text-white/30 text-[10px] uppercase tracking-widest mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>Key Elements</p>
-                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                                {songInfo.musicalAnalysis.keyElements.map((el, i) => (
-                                    <li key={i} className="flex items-start gap-2 text-white/70 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                                        <span className="text-primary mt-1 flex-shrink-0">·</span>{el}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div>
-                            <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>Soundscape</p>
-                            <p className="text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.musicalAnalysis.soundscape}</p>
-                        </div>
-                    </div>
-                )
-            },
-            songInfo.culturalContext && {
-                label: 'Cultural Impact',
-                content: (
-                    <div className="space-y-4">
-                        <div>
-                            <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>Era</p>
-                            <p className="text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.culturalContext.era}</p>
-                        </div>
-                        <div>
-                            <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>Influence</p>
-                            <p className="text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.culturalContext.influence}</p>
-                        </div>
-                        {songInfo.culturalContext.connections && songInfo.culturalContext.connections.length > 0 && (
-                            <div>
-                                <p className="text-white/30 text-[10px] uppercase tracking-widest mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>Similar Artists</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {songInfo.culturalContext.connections.map((c, i) => (
-                                        <span key={i} className="text-xs px-3 py-1 rounded-full border border-white/10 text-white/60"
-                                              style={{ fontFamily: 'DM Sans, sans-serif' }}>{c}</span>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )
-            },
-            {
-                label: 'Song Credits',
-                content: (
-                    <div className="space-y-4">
-                        {Array.isArray(songInfo.genre) && songInfo.genre.length > 0 && (
-                            <div>
-                                <p className="text-white/30 text-[10px] uppercase tracking-widest mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>Genre</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {songInfo.genre.map((g, i) => (
-                                        <span key={i} className="text-xs px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary"
-                                              style={{ fontFamily: 'DM Sans, sans-serif' }}>{g}</span>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {songInfo.credits?.map((credit, i) => (
-                            <div key={i} className="flex flex-col gap-0.5">
-                                <p className="text-white font-medium text-sm m-0" style={{ fontFamily: 'DM Sans, sans-serif' }}>{credit.name}</p>
-                                <p className="text-primary/80 text-xs m-0" style={{ fontFamily: 'DM Sans, sans-serif' }}>{credit.role}</p>
-                                {credit.knownFor && (
-                                    <p className="text-white/40 text-xs m-0 mt-0.5 pl-2 border-l border-primary/20 italic" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                                        {credit.knownFor}
-                                    </p>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )
-            },
-            songInfo.highlights && songInfo.highlights.length > 0 && {
-                label: 'Key Highlights',
-                content: (
-                    <div className="space-y-3">
-                        {songInfo.highlights.map((h, i) => (
-                            <div key={i} className="flex items-start gap-3">
-                                <span className="text-primary text-xs font-semibold w-5 flex-shrink-0 mt-0.5"
-                                      style={{ fontFamily: 'DM Sans, sans-serif', fontVariantNumeric: 'tabular-nums' }}>
-                                    {String(i + 1).padStart(2, '0')}
-                                </span>
-                                <p className="text-white/75 text-sm leading-relaxed flex-1 m-0" style={{ fontFamily: 'DM Sans, sans-serif' }}>{h}</p>
-                            </div>
-                        ))}
-                    </div>
-                )
-            },
-            songInfo.sources && songInfo.sources.length > 0 && {
-                label: 'Sources',
-                content: (
-                    <div className="flex flex-wrap gap-2">
-                        {songInfo.sources.map((source, i) => (
-                            <a
-                                key={i}
-                                href={source.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs px-3 py-1 rounded-full border border-white/10 text-white/60 hover:text-primary hover:border-primary/40 transition-colors"
-                                style={{ fontFamily: 'DM Sans, sans-serif' }}
-                            >
-                                {source.label}
-                            </a>
-                        ))}
-                    </div>
-                )
-            }
-        ] as Array<InfoSection | false | undefined>).filter((section): section is InfoSection => Boolean(section))
-        : [];
+    const cssVars = {
+        '--song-accent': accent.accent,
+        '--song-glow': accent.glow,
+        '--song-chip': accent.chip,
+        '--song-border': accent.border,
+    } as React.CSSProperties;
 
     return (
-        <div className="max-w-[1200px] mx-auto p-6 md:p-8 min-h-screen flex flex-col">
+        <div className="max-w-[1200px] mx-auto p-6 md:p-8 min-h-screen flex flex-col" style={cssVars}>
             <button
                 className="text-white/40 text-sm cursor-pointer transition-all duration-300 mb-8 flex items-center
                           gap-2 w-fit hover:text-white group"
@@ -263,114 +132,62 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist }) => {
                 <span>Back</span>
             </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8 mb-8 animate-fadeIn">
-                <div className="flex flex-col gap-6 md:items-start items-center">
-                    <div className="relative w-full max-w-[280px] md:max-w-none">
-                        <img
-                            className="w-full aspect-square rounded-lg object-cover shadow-2xl relative z-10"
-                            src={song.cover}
-                            alt={song.name}
-                        />
-                        <img
-                            className="absolute inset-0 w-full h-full object-cover rounded-lg blur-3xl opacity-25 scale-110 -z-0"
-                            src={song.cover}
-                            alt=""
-                            aria-hidden="true"
-                        />
-                    </div>
+            <HeroSection song={song} onAddToPlaylist={handleSaveToPlaylist} />
 
-                    <div className="w-full text-left">
-                        <h2 className="text-2xl font-bold text-white m-0 mb-1 leading-tight"
-                            style={{ fontFamily: 'Syne, sans-serif' }}>
-                            {song.name}
-                        </h2>
-                        <p className="m-0 mb-4 text-white/40"
-                           style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-                            {song.artist}
-                        </p>
-                        <div className="space-y-1.5 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                            <p className="text-white/50 m-0">
-                                <span className="text-white/20 text-[10px] uppercase tracking-widest mr-2">Album</span>
-                                {song.album}
-                            </p>
-                            <p className="text-white/50 m-0">
-                                <span className="text-white/20 text-[10px] uppercase tracking-widest mr-2">Released</span>
-                                {formatDate(song.releaseDate)}
-                            </p>
-                        </div>
-                    </div>
-
-                    <button
-                        className="w-full py-3.5 rounded-lg text-white text-sm font-semibold
-                                  cursor-pointer transition-all duration-300 relative overflow-hidden
-                                  hover:-translate-y-0.5 active:translate-y-0 group"
-                        style={{
-                            fontFamily: 'Syne, sans-serif',
-                            letterSpacing: '0.1em',
-                            textTransform: 'uppercase',
-                            fontSize: '12px',
-                            background: '#1DB954',
-                        }}
-                        onClick={handleSaveToPlaylist}
-                    >
-                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent
-                                         -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                        <span className="relative">+ Add to Playlist</span>
-                    </button>
-                </div>
-
-                <div className="overflow-y-auto pr-1 flex flex-col gap-5">
-                    {isLoadingInfo ? (
-                        <div className="my-4 flex flex-col items-center gap-4 animate-fadeIn py-12">
-                            <LoadingSpinner size="small" />
-                            {researchSteps.length > 0 ? (
-                                <ul className="text-white/40 text-sm italic space-y-1 text-center list-none p-0 m-0"
-                                    style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                                    {researchSteps.map((step, i) => (
-                                        <li key={i}>{step.status}</li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="text-white/40 text-sm italic animate-pulse" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                                    Researching this song...
-                                </p>
-                            )}
-                        </div>
-                    ) : typeof songInfo === 'string' ? (
-                        <div className="border-l-2 border-white/10 pl-5 py-1">
-                            <p className="text-white/30 m-0 mb-2"
-                               style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-                                Info
-                            </p>
-                            <p className="text-white/60 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                                {songInfo}
-                            </p>
-                        </div>
-                    ) : infoSections.length > 0 ? (
-                        <div className="space-y-5">
-                            {infoSections.map((section, i) => (
-                                <div key={i} className="border-l-2 border-primary/30 pl-5 py-1 transition-all duration-300 hover:border-primary/60">
-                                    <p className="text-primary m-0 mb-3"
-                                       style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-                                        {section.label}
-                                    </p>
-                                    {section.content}
-                                </div>
+            {isLoadingInfo ? (
+                <div className="my-4 flex flex-col items-center gap-4 animate-fadeIn py-12">
+                    <LoadingSpinner size="small" />
+                    {researchSteps.length > 0 ? (
+                        <ul className="text-white/40 text-sm italic space-y-1 text-center list-none p-0 m-0"
+                            style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                            {researchSteps.map((step, i) => (
+                                <li key={i}>{step.status}</li>
                             ))}
-                        </div>
+                        </ul>
                     ) : (
-                        <div className="border-l-2 border-white/10 pl-5 py-1">
-                            <p className="text-white/30 m-0 mb-2"
-                               style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-                                Info
-                            </p>
-                            <p className="text-white/60 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                                Additional song information is currently unavailable.
-                            </p>
-                        </div>
+                        <p className="text-white/40 text-sm italic animate-pulse" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                            Researching this song...
+                        </p>
                     )}
                 </div>
-            </div>
+            ) : typeof songInfo === 'string' ? (
+                <div className="border-l-2 border-white/10 pl-5 py-1">
+                    <p className="text-white/30 m-0 mb-2"
+                       style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+                        Info
+                    </p>
+                    <p className="text-white/60 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                        {songInfo}
+                    </p>
+                </div>
+            ) : songInfo ? (
+                <div className="space-y-5">
+                    <EmotionalFingerprintCard emotionalFingerprint={songInfo.emotionalFingerprint} />
+                    <SonicFingerprintCard sonicRead={songInfo.sonicRead} audioFeatures={songInfo.audioFeatures} />
+                    <div className="border-l-2 border-primary/30 pl-5 py-1">
+                        <p className="text-primary m-0 mb-3"
+                           style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+                            About this Song
+                        </p>
+                        <p className="text-white/75 leading-relaxed text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.summary}</p>
+                    </div>
+                    <MusicalElementsCard musicalAnalysis={songInfo.musicalAnalysis} />
+                    <CulturalImpactCard culturalContext={songInfo.culturalContext} />
+                    <CreditsCard credits={songInfo.credits} />
+                    <KeyFindingsCard findings={songInfo.findings} />
+                    <GenreSourcesFooter genre={songInfo.genre} sources={songInfo.sources} />
+                </div>
+            ) : (
+                <div className="border-l-2 border-white/10 pl-5 py-1">
+                    <p className="text-white/30 m-0 mb-2"
+                       style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+                        Info
+                    </p>
+                    <p className="text-white/60 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                        Additional song information is currently unavailable.
+                    </p>
+                </div>
+            )}
         </div>
     );
 };
