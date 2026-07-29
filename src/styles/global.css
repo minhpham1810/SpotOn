@@ -302,6 +302,11 @@
   }
 }
 
+.song-page :where(a, button):focus,
+.song-page :where(a, button):focus-visible {
+  transition-property: transform, opacity;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .song-skeleton::after,
   .song-progress-mark,
