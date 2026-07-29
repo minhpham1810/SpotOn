@@ -12,11 +12,15 @@ function sseEvent(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-function buildTools(): AgentTool[] {
-  const spotifyCreds = {
+function getSpotifyCreds() {
+  return {
     clientId: process.env.SPOTIFY_CLIENT_ID as string,
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET as string,
   };
+}
+
+function buildTools(): AgentTool[] {
+  const spotifyCreds = getSpotifyCreds();
   const geniusToken = process.env.GENIUS_ACCESS_TOKEN as string;
   const tavilyKey = process.env.TAVILY_API_KEY as string;
 
@@ -103,14 +107,9 @@ export default async function handler(request: Request): Promise<Response> {
           return;
         }
 
-        const spotifyCreds = {
-          clientId: process.env.SPOTIFY_CLIENT_ID as string,
-          clientSecret: process.env.SPOTIFY_CLIENT_SECRET as string,
-        };
-
         let audioFeatures: Awaited<ReturnType<typeof spotifyAudioFeatures>> | null = null;
         try {
-          audioFeatures = await spotifyAudioFeatures(trackId, spotifyCreds);
+          audioFeatures = await spotifyAudioFeatures(trackId, getSpotifyCreds());
         } catch (audioFeaturesError) {
           console.error('spotifyAudioFeatures failed, the agent will estimate instead:', audioFeaturesError);
           audioFeatures = null;

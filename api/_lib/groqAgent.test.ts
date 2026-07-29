@@ -310,6 +310,67 @@ test('runResearchAgent asks the model to estimate audioFeatures when Spotify dat
   expect(systemMessage).toContain('audioFeatures" is your own estimate');
 });
 
+test('runResearchAgent omits audioFeatures when the estimate has a non-numeric axis', async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  const malformedReportJson = JSON.stringify({
+    ...JSON.parse(finalReportJson),
+    audioFeatures: {
+      tempo: 92,
+      key: 'A Minor',
+      danceability: 0.4,
+      energy: 'high',
+      valence: 0.3,
+      acousticness: 0.6,
+      instrumentalness: 0.05,
+    },
+  });
+  mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: malformedReportJson }, 'stop'));
+
+  const report = await runResearchAgent({
+    track: { name: 'Song', artist: 'Artist' },
+    tools: [],
+    groqApiKey: 'key',
+    spotifyAudioFeatures: null,
+  });
+
+  expect(report.audioFeatures).toBeUndefined();
+});
+
+test('runResearchAgent round-trips a speculative finding with a null source', async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  const reportWithSpeculativeFinding = JSON.stringify({
+    ...JSON.parse(finalReportJson),
+    findings: [{ text: 'This likely nods to 90s trip-hop.', confidence: 'speculative', source: null }],
+  });
+  mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: reportWithSpeculativeFinding }, 'stop'));
+
+  const report = await runResearchAgent({
+    track: { name: 'Song', artist: 'Artist' },
+    tools: [],
+    groqApiKey: 'key',
+  });
+
+  expect(report.findings).toEqual([
+    { text: 'This likely nods to 90s trip-hop.', confidence: 'speculative', source: null },
+  ]);
+});
+
+test('runResearchAgent degrades findings to an empty array when missing from the final report', async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  const { findings: _omit, ...reportWithoutFindings } = JSON.parse(finalReportJson);
+  mockFetch.mockResolvedValueOnce(
+    groqResponse({ role: 'assistant', content: JSON.stringify(reportWithoutFindings) }, 'stop')
+  );
+
+  const report = await runResearchAgent({
+    track: { name: 'Song', artist: 'Artist' },
+    tools: [],
+    groqApiKey: 'key',
+  });
+
+  expect(report.findings).toEqual([]);
+});
+
 test('runResearchAgent omits audioFeatures when spotifyAudioFeatures is not provided', async () => {
   const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
   mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: finalReportJson }, 'stop'));

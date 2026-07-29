@@ -21,7 +21,7 @@ beforeEach(() => {
 test('researchSong emits step callbacks and resolves with the final report', async () => {
   const sse =
     'event: step\ndata: {"tool":"genius_lookup","status":"Looking up lyrics..."}\n\n' +
-    'event: report\ndata: {"summary":"done","musicalAnalysis":{"mood":"","keyElements":[],"soundscape":""},"genre":[],"culturalContext":{"era":"","influence":""},"credits":[],"highlights":[],"sources":[]}\n\n';
+    'event: report\ndata: {"summary":"done","musicalAnalysis":{"mood":"","keyElements":[],"soundscape":""},"genre":[],"culturalContext":{"era":"","influence":""},"credits":[],"findings":[],"sonicRead":"","sources":[]}\n\n';
 
   (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(streamResponse([sse]));
 
@@ -54,7 +54,7 @@ test('researchSong throws when the HTTP response is not ok', async () => {
 test('researchSong correctly handles events split across multiple chunks', async () => {
   // Split the closing \n\n across two chunks: first chunk ends with \n, second starts with \n
   const chunk1 = 'event: step\ndata: {"tool":"spotify_lookup","status":"Searching..."}\n';
-  const chunk2 = '\nevent: report\ndata: {"summary":"done","musicalAnalysis":{"mood":"","keyElements":[],"soundscape":""},"genre":[],"culturalContext":{"era":"","influence":""},"credits":[],"highlights":[],"sources":[]}\n\n';
+  const chunk2 = '\nevent: report\ndata: {"summary":"done","musicalAnalysis":{"mood":"","keyElements":[],"soundscape":""},"genre":[],"culturalContext":{"era":"","influence":""},"credits":[],"findings":[],"sonicRead":"","sources":[]}\n\n';
 
   (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(streamResponse([chunk1, chunk2]));
 
@@ -69,7 +69,7 @@ test('researchSong correctly handles events split across multiple chunks', async
 
 test('researchSong forwards the abort signal to fetch', async () => {
   const sse =
-    'event: report\ndata: {"summary":"done","musicalAnalysis":{"mood":"","keyElements":[],"soundscape":""},"genre":[],"culturalContext":{"era":"","influence":""},"credits":[],"highlights":[],"sources":[]}\n\n';
+    'event: report\ndata: {"summary":"done","musicalAnalysis":{"mood":"","keyElements":[],"soundscape":""},"genre":[],"culturalContext":{"era":"","influence":""},"credits":[],"findings":[],"sonicRead":"","sources":[]}\n\n';
   (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(streamResponse([sse]));
 
   const controller = new AbortController();

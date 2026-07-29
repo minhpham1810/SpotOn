@@ -127,6 +127,13 @@ async function callGroq(
   return { message: choice.message, finishReason: choice.finish_reason };
 }
 
+const ESTIMATED_AUDIO_FEATURE_AXES = ['danceability', 'energy', 'valence', 'acousticness', 'instrumentalness'] as const;
+
+function isValidEstimatedAudioFeatures(candidate: Record<string, unknown>): boolean {
+  if (typeof candidate.tempo !== 'number' || !Number.isFinite(candidate.tempo)) return false;
+  return ESTIMATED_AUDIO_FEATURE_AXES.every((axis) => Number.isFinite(candidate[axis]));
+}
+
 function parseFinalReport(
   content: string,
   spotifyAudioFeatures?: Omit<SongInfoAudioFeatures, 'source'> | null
@@ -141,7 +148,7 @@ function parseFinalReport(
   let audioFeatures: SongInfoAudioFeatures | undefined;
   if (spotifyAudioFeatures) {
     audioFeatures = { ...spotifyAudioFeatures, source: 'spotify' };
-  } else if (spotifyAudioFeatures === null && parsed.audioFeatures && typeof parsed.audioFeatures.tempo === 'number') {
+  } else if (spotifyAudioFeatures === null && parsed.audioFeatures && isValidEstimatedAudioFeatures(parsed.audioFeatures)) {
     audioFeatures = { ...parsed.audioFeatures, source: 'estimated' };
   }
 
