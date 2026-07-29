@@ -14,7 +14,7 @@ export function _resetTokenCacheForTests(): void {
   cachedToken = null;
 }
 
-async function getAppAccessToken(creds: SpotifyCredentials): Promise<string> {
+export async function getAppAccessToken(creds: SpotifyCredentials): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expiresAt) {
     return cachedToken.value;
   }
