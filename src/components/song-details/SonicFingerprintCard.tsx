@@ -6,7 +6,10 @@ interface SonicFingerprintCardProps {
   audioFeatures?: SongInfoAudioFeatures;
 }
 
-const AXES: { key: 'danceability' | 'energy' | 'valence' | 'acousticness' | 'instrumentalness'; label: string }[] = [
+type AudioFeatureKey = 'danceability' | 'energy' | 'valence' | 'acousticness' | 'instrumentalness';
+type NormalizedFeatures = Record<AudioFeatureKey, number>;
+
+const AXES: { key: AudioFeatureKey; label: string }[] = [
   { key: 'danceability', label: 'Dance' },
   { key: 'energy', label: 'Energy' },
   { key: 'valence', label: 'Valence' },
@@ -16,6 +19,7 @@ const AXES: { key: 'danceability' | 'energy' | 'valence' | 'acousticness' | 'ins
 
 const CENTER = 100;
 const MAX_RADIUS = 80;
+const LABEL_RADIUS = 1.05;
 
 function pointOnAxis(index: number, total: number, value: number): { x: number; y: number } {
   const angle = (Math.PI * 2 * index) / total - Math.PI / 2;
@@ -26,23 +30,38 @@ function pointOnAxis(index: number, total: number, value: number): { x: number; 
   };
 }
 
+function normalizeFeatures(audioFeatures: SongInfoAudioFeatures): NormalizedFeatures | null {
+  const normalized = {} as NormalizedFeatures;
+
+  for (const axis of AXES) {
+    const value: unknown = audioFeatures[axis.key];
+    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+    normalized[axis.key] = Math.max(0, Math.min(1, value));
+  }
+
+  return normalized;
+}
+
 const SonicFingerprintCard: React.FC<SonicFingerprintCardProps> = ({ sonicRead, audioFeatures }) => {
   if (!audioFeatures) return null;
 
+  const normalizedFeatures = normalizeFeatures(audioFeatures);
+  if (!normalizedFeatures) return null;
+
   const polygonPoints = AXES.map((axis, i) => {
-    const p = pointOnAxis(i, AXES.length, audioFeatures[axis.key]);
+    const p = pointOnAxis(i, AXES.length, normalizedFeatures[axis.key]);
     return `${p.x},${p.y}`;
   }).join(' ');
   const sourceLabel = audioFeatures.source === 'spotify' ? 'Spotify Audio Features' : 'AI Estimate';
   const chartAriaLabel = `Sonic fingerprint: ${AXES.map(
-    (a) => `${a.label} ${Math.round(audioFeatures[a.key] * 100)}%`
+    (a) => `${a.label} ${Math.round(normalizedFeatures[a.key] * 100)}%`
   ).join(', ')}`;
   const featureMeters = [
-    { label: 'Energy', value: audioFeatures.energy },
-    { label: 'Valence', value: audioFeatures.valence },
-    { label: 'Danceability', value: audioFeatures.danceability },
-    { label: 'Acousticness', value: audioFeatures.acousticness },
-    { label: 'Instrumentalness', value: audioFeatures.instrumentalness },
+    { label: 'Energy', value: normalizedFeatures.energy },
+    { label: 'Valence', value: normalizedFeatures.valence },
+    { label: 'Danceability', value: normalizedFeatures.danceability },
+    { label: 'Acousticness', value: normalizedFeatures.acousticness },
+    { label: 'Instrumentalness', value: normalizedFeatures.instrumentalness },
   ].map((feature) => ({
     ...feature,
     percent: Math.round(feature.value * 100),
@@ -75,7 +94,9 @@ const SonicFingerprintCard: React.FC<SonicFingerprintCardProps> = ({ sonicRead, 
             strokeWidth={2}
           />
           {AXES.map((axis, i) => {
-            const p = pointOnAxis(i, AXES.length, 1.15);
+            const p = pointOnAxis(i, AXES.length, LABEL_RADIUS);
+            const textAnchor =
+              p.x > CENTER + 0.5 ? 'end' : p.x < CENTER - 0.5 ? 'start' : 'middle';
             return (
               <text
                 key={axis.key}
@@ -83,7 +104,7 @@ const SonicFingerprintCard: React.FC<SonicFingerprintCardProps> = ({ sonicRead, 
                 y={p.y}
                 fill="rgba(255,255,255,0.5)"
                 fontSize="8"
-                textAnchor="middle"
+                textAnchor={textAnchor}
                 dominantBaseline="middle"
               >
                 {axis.label}
