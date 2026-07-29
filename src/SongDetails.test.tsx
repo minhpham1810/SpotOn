@@ -6,6 +6,7 @@ import { vi, test, expect, beforeEach } from 'vitest';
 import SongDetails from './SongDetails';
 import { ToastProvider } from './contexts/ToastContext';
 import { SongInfo } from './types/song-info';
+import { TrackDetails } from './types/spotify';
 import SpotifyAPI from './api/SpotifyAPI';
 
 vi.mock('./api/SpotifyAPI', () => ({
@@ -29,6 +30,16 @@ vi.mock('./api/ResearchAgentAPI', () => ({
 }));
 
 const getTrackDetailsMock = vi.mocked(SpotifyAPI.getTrackDetails);
+
+const trackFixture: TrackDetails = {
+  id: '1',
+  name: 'Test Song',
+  artist: 'Test Artist',
+  album: 'Test Album',
+  cover: 'cover.jpg',
+  releaseDate: '2020-01-01',
+  preview_url: null,
+};
 
 vi.mock('./lib/coverAccentColor', () => ({
   extractCoverAccent: vi.fn().mockResolvedValue({
@@ -69,6 +80,36 @@ const baseReport: SongInfo = {
 
 beforeEach(() => {
   researchSongMock.mockReset();
+  getTrackDetailsMock.mockReset();
+  getTrackDetailsMock.mockResolvedValue(trackFixture);
+});
+
+test('shows a layout-matched skeleton before the track resolves', () => {
+  getTrackDetailsMock.mockReturnValueOnce(new Promise(() => {}));
+  renderSongDetails();
+
+  expect(screen.getByTestId('song-details-skeleton')).toBeInTheDocument();
+  expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+});
+
+test('retries a failed track request', async () => {
+  getTrackDetailsMock
+    .mockRejectedValueOnce(new Error('network'))
+    .mockResolvedValueOnce(trackFixture);
+  const user = userEvent.setup();
+  renderSongDetails();
+
+  await user.click(await screen.findByRole('button', { name: 'Try again' }));
+
+  expect(getTrackDetailsMock).toHaveBeenCalledTimes(2);
+  expect(await screen.findByRole('heading', { name: 'Test Song' })).toBeInTheDocument();
+});
+
+test('shows a themed unavailable panel when research returns no report', async () => {
+  researchSongMock.mockResolvedValue(null);
+  renderSongDetails();
+
+  expect(await screen.findByText(/Additional song information is currently unavailable/i)).toBeInTheDocument();
 });
 
 test('exposes preview playback state through the hero button', async () => {
@@ -116,7 +157,8 @@ test('shows research trace steps while the agent is working', async () => {
 
   renderSongDetails();
 
-  expect(await screen.findByText(/Reading lyrics annotations on Genius/i)).toBeInTheDocument();
+  expect(await screen.findByRole('status', { name: 'Song research progress' })).toBeInTheDocument();
+  expect(screen.getByText(/Reading lyrics annotations on Genius/i)).toBeInTheDocument();
 });
 
 test('renders source links once the report arrives', async () => {

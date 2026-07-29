@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from './contexts/ToastContext';
-import LoadingSpinner from './LoadingSpinner';
 import SpotifyAPI from './api/SpotifyAPI';
 import ResearchAgentAPI, { ResearchStepEvent } from './api/ResearchAgentAPI';
 import { TrackDetails } from './types/spotify';
@@ -16,6 +15,9 @@ import CreditsCard from './components/song-details/CreditsCard';
 import KeyFindingsCard from './components/song-details/KeyFindingsCard';
 import GenreSourcesFooter from './components/song-details/GenreSourcesFooter';
 import SongDetailsHeader from './components/song-details/SongDetailsHeader';
+import SongDetailsSkeleton from './components/song-details/SongDetailsSkeleton';
+import ResearchProgress from './components/song-details/ResearchProgress';
+import SongDetailsError from './components/song-details/SongDetailsError';
 import { useAudioPreview } from './components/song-details/useAudioPreview';
 
 const DEFAULT_ACCENT: CoverAccent = {
@@ -40,6 +42,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
     const [error, setError] = useState<string | null>(null);
     const [researchSteps, setResearchSteps] = useState<ResearchStepEvent[]>([]);
     const [accent, setAccent] = useState<CoverAccent>(DEFAULT_ACCENT);
+    const [retryKey, setRetryKey] = useState(0);
     const handlePreviewError = useCallback(() => {
         showToast('Unable to play this preview', 'error');
     }, [showToast]);
@@ -50,17 +53,21 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
 
         const fetchSongDetails = async () => {
             if (!id) return;
+            setError(null);
+            setSong(null);
+            setSongInfo(null);
+            setResearchSteps([]);
+            setAccent(DEFAULT_ACCENT);
+            setIsLoadingInfo(false);
             try {
                 const data = await SpotifyAPI.getTrackDetails(id);
+                if (controller.signal.aborted) return;
                 setSong(data);
-                setAccent(DEFAULT_ACCENT);
                 extractCoverAccent(data.cover).then((result) => {
                     if (!controller.signal.aborted) setAccent(result);
                 });
 
                 setIsLoadingInfo(true);
-                setResearchSteps([]);
-                setSongInfo(null);
                 try {
                     const info = await ResearchAgentAPI.researchSong(
                         { id, name: data.name, artist: data.artist, album: data.album },
@@ -80,6 +87,9 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
                     }
                 }
             } catch (error) {
+                if (error instanceof Error && error.name === 'AbortError') {
+                    return;
+                }
                 console.error('Error fetching song details:', error);
                 setError('Failed to load song details');
                 showToast('Failed to load song details', 'error');
@@ -91,7 +101,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
         return () => {
             controller.abort();
         };
-    }, [id, showToast]);
+    }, [id, retryKey, showToast]);
 
     const handleSaveToPlaylist = () => {
         if (!song) return;
@@ -102,24 +112,6 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
         }
     };
 
-    if (error) {
-        return (
-            <div className="p-8 text-center">
-                <p className="text-red-500 mb-4">{error}</p>
-                <button
-                    onClick={() => navigate('/')}
-                    className="px-4 py-2 bg-spotify-green text-white rounded-full hover:bg-spotify-green-light transition-all duration-300"
-                >
-                    Back to Homepage
-                </button>
-            </div>
-        );
-    }
-
-    if (!song) {
-        return <div className="p-8 text-center text-white/70">Loading...</div>;
-    }
-
     const cssVars = {
         '--song-accent': accent.accent,
         '--song-glow': accent.glow,
@@ -128,33 +120,28 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
     } as React.CSSProperties;
 
     return (
-        <div className="max-w-[1200px] mx-auto p-6 md:p-8 min-h-screen flex flex-col" style={cssVars}>
+        <main aria-label="Song details" className="song-page min-h-[100dvh]" style={cssVars}>
             <SongDetailsHeader onBack={() => navigate('/')} onLogout={onLogout} />
-
-            <HeroSection
-                song={song}
-                onAddToPlaylist={handleSaveToPlaylist}
-                previewState={preview.state}
-                onTogglePreview={() => void preview.toggle()}
-            />
-
-            {isLoadingInfo ? (
-                <div className="my-4 flex flex-col items-center gap-4 animate-fadeIn py-12">
-                    <LoadingSpinner size="small" />
-                    {researchSteps.length > 0 ? (
-                        <ul className="text-white/40 text-sm italic space-y-1 text-center list-none p-0 m-0"
-                            style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                            {researchSteps.map((step, i) => (
-                                <li key={i}>{step.status}</li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="text-white/40 text-sm italic animate-pulse" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                            Researching this song...
-                        </p>
-                    )}
-                </div>
-            ) : typeof songInfo === 'string' ? (
+            {!song && !error ? (
+                <SongDetailsSkeleton />
+            ) : error ? (
+                <SongDetailsError
+                    message={error}
+                    onRetry={() => setRetryKey((value) => value + 1)}
+                    onBack={() => navigate('/')}
+                />
+            ) : song ? (
+                <>
+                    <section className="song-shell py-10 sm:py-14">
+                        <HeroSection
+                            song={song}
+                            onAddToPlaylist={handleSaveToPlaylist}
+                            previewState={preview.state}
+                            onTogglePreview={() => void preview.toggle()}
+                        />
+                    </section>
+                    <section aria-label="Song research report" className="song-shell pb-20">
+                        {isLoadingInfo ? <ResearchProgress steps={researchSteps} /> : typeof songInfo === 'string' ? (
                 <div className="border-l-2 border-white/10 pl-5 py-1">
                     <p className="text-white/30 m-0 mb-2"
                        style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
@@ -182,7 +169,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
                     <div className="md:col-span-2"><GenreSourcesFooter genre={songInfo.genre} sources={songInfo.sources} /></div>
                 </div>
             ) : (
-                <div className="border-l-2 border-white/10 pl-5 py-1">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-7 text-center sm:p-9">
                     <p className="text-white/30 m-0 mb-2"
                        style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
                         Info
@@ -191,8 +178,11 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
                         Additional song information is currently unavailable.
                     </p>
                 </div>
-            )}
-        </div>
+                        )}
+                    </section>
+                </>
+            ) : null}
+        </main>
     );
 };
 
