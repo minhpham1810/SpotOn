@@ -8,6 +8,11 @@ export interface AudioPreviewController {
   stop: () => void;
 }
 
+interface PreviewPlayback {
+  url: string;
+  state: Exclude<AudioPreviewState, 'unavailable'>;
+}
+
 export function useAudioPreview(
   previewUrl: string | null | undefined,
   onError: () => void
@@ -16,7 +21,21 @@ export function useAudioPreview(
   const generationRef = useRef(0);
   const pendingPlayRef = useRef<symbol | null>(null);
   const activePlaybackRef = useRef<symbol | null>(null);
-  const [state, setState] = useState<AudioPreviewState>(previewUrl ? 'idle' : 'unavailable');
+  const [playback, setPlayback] = useState<PreviewPlayback | null>(
+    previewUrl ? { url: previewUrl, state: 'idle' } : null
+  );
+  const state: AudioPreviewState = previewUrl
+    ? playback?.url === previewUrl
+      ? playback.state
+      : 'idle'
+    : 'unavailable';
+
+  const setCurrentState = useCallback((
+    url: string,
+    nextState: PreviewPlayback['state']
+  ) => {
+    setPlayback({ url, state: nextState });
+  }, []);
 
   const isCurrentPlayback = useCallback((audio: HTMLAudioElement, generation: number, token: symbol) => (
     generationRef.current === generation
@@ -42,13 +61,9 @@ export function useAudioPreview(
   useEffect(() => {
     stop();
 
-    if (!previewUrl) {
-      setState('unavailable');
-      return stop;
-    }
+    if (!previewUrl) return stop;
 
     audioRef.current = new Audio(previewUrl);
-    setState('idle');
 
     return stop;
   }, [previewUrl, stop]);
@@ -66,7 +81,7 @@ export function useAudioPreview(
       audio.onended = null;
       audio.onerror = null;
       audio.pause();
-      setState('paused');
+      setCurrentState(previewUrl, 'paused');
       return;
     }
 
@@ -79,14 +94,14 @@ export function useAudioPreview(
 
       pendingPlayRef.current = null;
       activePlaybackRef.current = null;
-      setState('idle');
+      setCurrentState(previewUrl, 'idle');
     };
     audio.onerror = () => {
       if (!isCurrentPlayback(audio, generation, token)) return;
 
       pendingPlayRef.current = null;
       activePlaybackRef.current = null;
-      setState('idle');
+      setCurrentState(previewUrl, 'idle');
       onError();
     };
 
@@ -95,16 +110,16 @@ export function useAudioPreview(
       if (!isCurrentPlayback(audio, generation, token) || pendingPlayRef.current !== token) return;
 
       pendingPlayRef.current = null;
-      setState('playing');
+      setCurrentState(previewUrl, 'playing');
     } catch {
       if (!isCurrentPlayback(audio, generation, token) || pendingPlayRef.current !== token) return;
 
       pendingPlayRef.current = null;
       activePlaybackRef.current = null;
-      setState('idle');
+      setCurrentState(previewUrl, 'idle');
       onError();
     }
-  }, [isCurrentPlayback, onError, previewUrl, state]);
+  }, [isCurrentPlayback, onError, previewUrl, setCurrentState, state]);
 
   return { state, toggle, stop };
 }

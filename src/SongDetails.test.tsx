@@ -2,7 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, Link } from 'react-router-dom';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, test, expect, beforeEach } from 'vitest';
+import { vi, test, expect, beforeEach, afterEach } from 'vitest';
 import SongDetails from './SongDetails';
 import { ToastProvider } from './contexts/ToastContext';
 import { SongInfo } from './types/song-info';
@@ -82,6 +82,10 @@ beforeEach(() => {
   researchSongMock.mockReset();
   getTrackDetailsMock.mockReset();
   getTrackDetailsMock.mockResolvedValue(trackFixture);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 test('renders the immersive hero and labeled research report', async () => {
@@ -245,6 +249,41 @@ test('renders source links once the report arrives', async () => {
 
   const sourceLink = await screen.findByRole('link', { name: 'Genius' });
   expect(sourceLink).toHaveAttribute('href', 'https://genius.com/x');
+});
+
+test('moves keyboard focus through back, logout, hero actions, then sources', async () => {
+  getTrackDetailsMock.mockResolvedValueOnce({
+    ...trackFixture,
+    preview_url: 'https://cdn.example/preview.mp3',
+  });
+  researchSongMock.mockResolvedValue({
+    ...baseReport,
+    sources: [{ label: 'Genius', url: 'https://genius.com/x' }],
+  });
+  vi.stubGlobal('Audio', vi.fn(function () {
+    return {
+      play: vi.fn().mockResolvedValue(undefined),
+      pause: vi.fn(),
+      currentTime: 0,
+      onended: null,
+      onerror: null,
+    };
+  }));
+  const user = userEvent.setup();
+  renderSongDetails();
+
+  await screen.findByRole('link', { name: 'Genius' });
+
+  await user.tab();
+  expect(screen.getByRole('button', { name: 'Back to search' })).toHaveFocus();
+  await user.tab();
+  expect(screen.getByRole('button', { name: 'Logout' })).toHaveFocus();
+  await user.tab();
+  expect(screen.getByRole('button', { name: 'Add to playlist' })).toHaveFocus();
+  await user.tab();
+  expect(screen.getByRole('button', { name: 'Preview' })).toHaveFocus();
+  await user.tab();
+  expect(screen.getByRole('link', { name: 'Genius' })).toHaveFocus();
 });
 
 test('renders the Emotional Fingerprint section first, above About this Song', async () => {

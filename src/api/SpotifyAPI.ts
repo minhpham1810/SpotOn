@@ -278,6 +278,7 @@ const SpotifyAPI = {
         album: track.album.name,
         cover: track.album.images[0]?.url || "default-cover.jpg",
         releaseDate: track.album.release_date,
+        preview_url: track.preview_url ?? null,
       };
     } catch (error) {
       console.error("Track details error:", error);

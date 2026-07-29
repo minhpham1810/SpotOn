@@ -24,9 +24,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ song, onAddToPlaylist, previe
         : 'Preview';
 
   return (
-    <section aria-label={`${song.name} overview`} className="song-shell song-hero relative py-10 sm:py-14 lg:py-16">
-      <div className="grid grid-cols-1 items-center gap-9 md:grid-cols-[minmax(240px,320px)_1fr] md:gap-12">
-        <div className="relative mx-auto w-full max-w-72 md:max-w-none">
+    <section aria-label={`${song.name} overview`} className="song-shell song-hero">
+      <div className="grid grid-cols-1 items-center gap-9 lg:grid-cols-[minmax(240px,320px)_1fr] lg:gap-12">
+        <div className="relative mx-auto w-full max-w-72 lg:max-w-none">
           <div className="absolute inset-[-7%] rounded-[1.75rem] bg-[var(--song-glow)] opacity-70 blur-3xl" aria-hidden="true" />
           <img
             src={song.cover}
@@ -36,11 +36,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ song, onAddToPlaylist, previe
         </div>
         <div className="min-w-0">
           <p className="song-eyebrow">AI deep research</p>
-          <h1 className="max-w-[14ch] font-syne text-4xl font-extrabold leading-[0.98] tracking-[-0.03em] text-balance sm:text-5xl lg:text-6xl">
+          <h1 className="max-w-[14ch] font-syne text-4xl font-extrabold leading-[0.98] tracking-[-0.03em] text-balance [overflow-wrap:anywhere] sm:text-5xl lg:text-6xl">
             {song.name}
           </h1>
-          <p className="mt-4 text-sm uppercase tracking-[0.16em] text-white/60">{song.artist}</p>
-          <p className="mt-2 text-sm text-white/40">
+          <p className="mt-4 text-sm uppercase tracking-[0.16em] text-white/60 [overflow-wrap:anywhere]">{song.artist}</p>
+          <p className="mt-2 text-sm text-white/40 [overflow-wrap:anywhere]">
             {releaseYear ? `${song.album} · ${releaseYear}` : song.album}
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">

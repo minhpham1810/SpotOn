@@ -88,8 +88,9 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
                     setResearchError('Unable to load additional song information.');
                     showToast('Unable to load song details at this time', 'error');
                 } finally {
-                    if (controller.signal.aborted) return;
-                    setIsLoadingInfo(false);
+                    if (!controller.signal.aborted) {
+                        setIsLoadingInfo(false);
+                    }
                 }
             } catch (error) {
                 if (controller.signal.aborted) return;

@@ -19,7 +19,7 @@ test('renders a confidence badge and citation for each finding', () => {
         {
           text: 'The producer favored tape saturation on this record.',
           confidence: 'inferred',
-          source: { label: 'Interview', url: 'https://example.com/y' },
+          source: { label: 'Artist Q&A', url: 'https://example.com/y' },
         },
         {
           text: 'This choice likely nods to 90s trip-hop.',
@@ -34,6 +34,6 @@ test('renders a confidence badge and citation for each finding', () => {
   expect(screen.getByText('Inferred')).toBeInTheDocument();
   expect(screen.getByText('Speculative')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: /Genius/ })).toHaveAttribute('href', 'https://genius.com/x');
-  expect(screen.getByRole('link', { name: /Interview/ })).toHaveAttribute('href', 'https://example.com/y');
+  expect(screen.getByRole('link', { name: /Artist Q&A/ })).toHaveAttribute('href', 'https://example.com/y');
   expect(screen.queryAllByRole('link')).toHaveLength(2);
 });

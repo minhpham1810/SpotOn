@@ -13,15 +13,15 @@ const CreditsCard: React.FC<CreditsCardProps> = ({ credits }) => {
       <p className="song-eyebrow">Credits</p>
       <div className="divide-y divide-white/[0.08]">
         {credits.map((credit, i) => (
-          <div key={i} className="flex flex-col gap-0.5 py-4 first:pt-0 last:pb-0">
-            <p className="text-sm font-medium text-white">
+          <div key={i} className="flex min-w-0 flex-col gap-0.5 py-4 first:pt-0 last:pb-0">
+            <p className="text-sm font-medium text-white [overflow-wrap:anywhere]">
               {credit.name}
             </p>
-            <p className="text-sm" style={{ color: 'var(--song-accent, #1DB954)' }}>
+            <p className="text-sm [overflow-wrap:anywhere]" style={{ color: 'var(--song-accent, #1DB954)' }}>
               {credit.role}
             </p>
             {credit.knownFor && (
-              <p className="mt-1 text-sm leading-relaxed text-white/70">
+              <p className="mt-1 text-sm leading-relaxed text-white/70 [overflow-wrap:anywhere]">
                 {credit.knownFor}
               </p>
             )}

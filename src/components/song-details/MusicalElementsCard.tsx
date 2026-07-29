@@ -1,4 +1,5 @@
 import React from 'react';
+import { Circle } from '@phosphor-icons/react';
 import type { SongInfoMusicalAnalysis } from '../../types/song-info';
 
 interface MusicalElementsCardProps {
@@ -27,10 +28,13 @@ const MusicalElementsCard: React.FC<MusicalElementsCardProps> = ({ musicalAnalys
           <ul className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
             {Array.isArray(musicalAnalysis.keyElements) && musicalAnalysis.keyElements.map((el, i) => (
               <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-white/70">
-                <span className="mt-1 flex-shrink-0" style={{ color: 'var(--song-accent, #1DB954)' }}>
-                  ·
-                </span>
-                {el}
+                <Circle
+                  className="mt-1.5 flex-shrink-0 text-[var(--song-accent)]"
+                  size={6}
+                  weight="fill"
+                  aria-hidden="true"
+                />
+                <span className="min-w-0 [overflow-wrap:anywhere]">{el}</span>
               </li>
             ))}
           </ul>

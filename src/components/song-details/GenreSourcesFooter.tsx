@@ -20,7 +20,7 @@ const GenreSourcesFooter: React.FC<GenreSourcesFooterProps> = ({ genre, sources 
   if (!hasGenre && !hasSources) return null;
 
   return (
-    <div className="song-card--wide grid grid-cols-1 gap-5 md:grid-cols-2">
+    <div className="song-card--wide grid grid-cols-1 gap-5 lg:grid-cols-2">
       {hasGenre && (
         <div
           className={`song-card song-reveal${hasSingleSection ? ' song-card--wide' : ''}`}

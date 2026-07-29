@@ -54,7 +54,7 @@ const KeyFindingsCard: React.FC<KeyFindingsCardProps> = ({ findings }) => {
                 {String(i + 1).padStart(2, '0')}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="mb-2 text-sm leading-relaxed text-white/70">
+                <p className="mb-2 text-sm leading-relaxed text-white/70 [overflow-wrap:anywhere]">
                   {finding.text}
                 </p>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -72,7 +72,7 @@ const KeyFindingsCard: React.FC<KeyFindingsCardProps> = ({ findings }) => {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 border-b border-white/15 text-xs text-white/50"
                     >
-                      <span>{finding.source.label}</span>
+                      <span className="min-w-0 [overflow-wrap:anywhere]">{finding.source.label}</span>
                       <ArrowUpRight size={13} weight="bold" aria-hidden="true" />
                     </a>
                   )}

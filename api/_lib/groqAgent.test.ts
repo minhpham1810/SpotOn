@@ -357,7 +357,8 @@ test('runResearchAgent round-trips a speculative finding with a null source', as
 
 test('runResearchAgent degrades findings to an empty array when missing from the final report', async () => {
   const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
-  const { findings: _omit, ...reportWithoutFindings } = JSON.parse(finalReportJson);
+  const reportWithoutFindings = JSON.parse(finalReportJson);
+  delete reportWithoutFindings.findings;
   mockFetch.mockResolvedValueOnce(
     groqResponse({ role: 'assistant', content: JSON.stringify(reportWithoutFindings) }, 'stop')
   );
