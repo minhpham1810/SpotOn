@@ -1,4 +1,5 @@
 import React from 'react';
+import { ApproximateEquals, ArrowUpRight, Check, Question } from '@phosphor-icons/react';
 import type { SongInfoFinding, FindingConfidence } from '../../types/song-info';
 import { safeUrl } from '../../lib/safeUrl';
 
@@ -28,37 +29,40 @@ const CONFIDENCE_STYLE: Record<FindingConfidence, React.CSSProperties | undefine
   speculative: undefined,
 };
 
+const CONFIDENCE_ICON = {
+  verified: Check,
+  inferred: ApproximateEquals,
+  speculative: Question,
+} satisfies Record<FindingConfidence, React.ComponentType<{ size?: number; weight?: 'bold'; 'aria-hidden'?: boolean }>>;
+
 const KeyFindingsCard: React.FC<KeyFindingsCardProps> = ({ findings }) => {
   if (!Array.isArray(findings) || findings.length === 0) return null;
 
   return (
-    <div className="border-l-2 pl-5 py-1" style={{ borderColor: 'var(--song-border, rgba(29,185,84,0.3))' }}>
-      <p
-        className="m-0 mb-3"
-        style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--song-accent, #1DB954)' }}
-      >
-        Key Findings
-      </p>
-      <div className="flex flex-col gap-4">
+    <div className="song-card song-reveal" style={{ '--song-index': 6 } as React.CSSProperties}>
+      <p className="song-eyebrow">Key Findings</p>
+      <div className="divide-y divide-white/[0.08]">
         {findings.map((finding, i) => {
           const href = finding.source ? safeUrl(finding.source.url) : undefined;
+          const ConfidenceIcon = CONFIDENCE_ICON[finding.confidence];
           return (
-            <div key={i} className="flex items-start gap-3">
+            <div key={i} className="flex items-start gap-3 py-4 first:pt-0 last:pb-0">
               <span
-                className="font-bold text-sm w-6 flex-shrink-0"
-                style={{ fontFamily: 'Syne, sans-serif', fontVariantNumeric: 'tabular-nums', color: 'var(--song-accent, #1DB954)' }}
+                className="w-6 flex-shrink-0 font-syne text-sm font-bold"
+                style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--song-accent, #1DB954)' }}
               >
                 {String(i + 1).padStart(2, '0')}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-white/80 text-sm leading-relaxed m-0 mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                <p className="mb-2 text-sm leading-relaxed text-white/70">
                   {finding.text}
                 </p>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span
-                    className={`text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${CONFIDENCE_CLASS[finding.confidence]}`}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-wider ${CONFIDENCE_CLASS[finding.confidence]}`}
                     style={CONFIDENCE_STYLE[finding.confidence]}
                   >
+                    <ConfidenceIcon size={12} weight="bold" aria-hidden={true} />
                     {CONFIDENCE_LABEL[finding.confidence]}
                   </span>
                   {finding.source && href && (
@@ -66,9 +70,10 @@ const KeyFindingsCard: React.FC<KeyFindingsCardProps> = ({ findings }) => {
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-white/50 border-b border-white/15 transition-colors"
+                      className="inline-flex items-center gap-1 border-b border-white/15 text-xs text-white/50 transition-colors"
                     >
-                      {finding.source.label} ↗
+                      <span>{finding.source.label}</span>
+                      <ArrowUpRight size={13} weight="bold" aria-hidden="true" />
                     </a>
                   )}
                 </div>

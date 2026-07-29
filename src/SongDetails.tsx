@@ -123,7 +123,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
     } as React.CSSProperties;
 
     return (
-        <main aria-label="Song details" className="song-page min-h-[100dvh]" style={cssVars}>
+        <main aria-label="Song details" className="song-page" style={cssVars}>
             <SongDetailsHeader onBack={() => navigate('/')} onLogout={onLogout} />
             {!song && !error ? (
                 <SongDetailsSkeleton />
@@ -135,64 +135,51 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
                 />
             ) : song ? (
                 <>
-                    <section className="song-shell py-10 sm:py-14">
-                        <HeroSection
-                            song={song}
-                            onAddToPlaylist={handleSaveToPlaylist}
-                            previewState={preview.state}
-                            onTogglePreview={() => void preview.toggle()}
-                        />
-                    </section>
+                    <HeroSection
+                        song={song}
+                        onAddToPlaylist={handleSaveToPlaylist}
+                        previewState={preview.state}
+                        onTogglePreview={() => void preview.toggle()}
+                    />
                     <section aria-label="Song research report" className="song-shell pb-20">
                         {isLoadingInfo ? <ResearchProgress steps={researchSteps} /> : researchError ? (
-                            <div className="rounded-2xl border border-red-400/20 bg-red-400/[0.06] p-7 text-center sm:p-9" role="alert">
+                            <article className="song-card song-card--wide text-center" role="alert">
                                 <p className="font-syne text-lg font-semibold text-white">Research is unavailable right now</p>
                                 <p className="mt-2 text-sm text-white/60">{researchError}</p>
                                 <button
                                     type="button"
                                     onClick={() => setRetryKey((value) => value + 1)}
-                                    className="mt-5 rounded-full border border-white/15 px-5 py-3 text-sm text-white/80"
+                                    className="song-secondary-action mt-5"
                                 >
                                     Try again
                                 </button>
+                            </article>
+                        ) : songInfo && typeof songInfo !== 'string' ? (
+                            <div className="song-report-grid">
+                                <EmotionalFingerprintCard emotionalFingerprint={songInfo.emotionalFingerprint} />
+                                <SonicFingerprintCard sonicRead={songInfo.sonicRead} audioFeatures={songInfo.audioFeatures} />
+                                <article
+                                    className="song-card song-card--wide song-reveal"
+                                    style={{ '--song-index': 2 } as React.CSSProperties}
+                                >
+                                    <p className="song-eyebrow">About this Song</p>
+                                    <p className="max-w-[65ch] text-sm leading-relaxed text-white/70">{songInfo.summary}</p>
+                                </article>
+                                <MusicalElementsCard musicalAnalysis={songInfo.musicalAnalysis} />
+                                <CulturalImpactCard culturalContext={songInfo.culturalContext} />
+                                <CreditsCard credits={songInfo.credits} />
+                                <KeyFindingsCard findings={songInfo.findings} />
+                                <GenreSourcesFooter genre={songInfo.genre} sources={songInfo.sources} />
                             </div>
-                        ) : typeof songInfo === 'string' ? (
-                <div className="border-l-2 border-white/10 pl-5 py-1">
-                    <p className="text-white/30 m-0 mb-2"
-                       style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-                        Info
-                    </p>
-                    <p className="text-white/60 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                        {songInfo}
-                    </p>
-                </div>
-            ) : songInfo ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="md:col-span-2"><EmotionalFingerprintCard emotionalFingerprint={songInfo.emotionalFingerprint} /></div>
-                    <div className="md:col-span-2"><SonicFingerprintCard sonicRead={songInfo.sonicRead} audioFeatures={songInfo.audioFeatures} /></div>
-                    <div className="border-l-2 pl-5 py-1" style={{ borderColor: 'var(--song-border, rgba(29,185,84,0.3))' }}>
-                        <p className="m-0 mb-3"
-                           style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--song-accent, #1DB954)' }}>
-                            About this Song
-                        </p>
-                        <p className="text-white/75 leading-relaxed text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>{songInfo.summary}</p>
-                    </div>
-                    <MusicalElementsCard musicalAnalysis={songInfo.musicalAnalysis} />
-                    <CulturalImpactCard culturalContext={songInfo.culturalContext} />
-                    <CreditsCard credits={songInfo.credits} />
-                    <div className="md:col-span-2"><KeyFindingsCard findings={songInfo.findings} /></div>
-                    <div className="md:col-span-2"><GenreSourcesFooter genre={songInfo.genre} sources={songInfo.sources} /></div>
-                </div>
-            ) : (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-7 text-center sm:p-9">
-                    <p className="text-white/30 m-0 mb-2"
-                       style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-                        Info
-                    </p>
-                    <p className="text-white/60 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                        Additional song information is currently unavailable.
-                    </p>
-                </div>
+                        ) : (
+                            <article className="song-card song-card--wide" role="status">
+                                <p className="song-eyebrow">Info</p>
+                                <p className="max-w-[65ch] text-sm leading-relaxed text-white/60">
+                                    {typeof songInfo === 'string'
+                                        ? songInfo
+                                        : 'Additional song information is currently unavailable. The album theme is already applied from the cover art.'}
+                                </p>
+                            </article>
                         )}
                     </section>
                 </>

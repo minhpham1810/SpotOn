@@ -84,6 +84,16 @@ beforeEach(() => {
   getTrackDetailsMock.mockResolvedValue(trackFixture);
 });
 
+test('renders the immersive hero and labeled research report', async () => {
+  researchSongMock.mockResolvedValue(baseReport);
+  renderSongDetails();
+
+  expect(await screen.findByRole('main', { name: 'Song details' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Test Song overview' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Song research report' })).toBeInTheDocument();
+  expect(screen.getByRole('img', { name: 'Test Song album cover' })).toBeInTheDocument();
+});
+
 test('shows a layout-matched skeleton before the track resolves', () => {
   getTrackDetailsMock.mockReturnValueOnce(new Promise(() => {}));
   renderSongDetails();

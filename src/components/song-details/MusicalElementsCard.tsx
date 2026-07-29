@@ -9,29 +9,24 @@ const MusicalElementsCard: React.FC<MusicalElementsCardProps> = ({ musicalAnalys
   if (!musicalAnalysis) return null;
 
   return (
-    <div className="border-l-2 pl-5 py-1" style={{ borderColor: 'var(--song-border, rgba(29,185,84,0.3))' }}>
-      <p
-        className="m-0 mb-3"
-        style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--song-accent, #1DB954)' }}
-      >
-        Musical Elements
-      </p>
-      <div className="space-y-4">
+    <div className="song-card song-reveal" style={{ '--song-index': 3 } as React.CSSProperties}>
+      <p className="song-eyebrow">Musical Elements</p>
+      <div className="space-y-5">
         <div>
-          <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+          <p className="mb-1 text-[10px] uppercase tracking-widest text-white/30">
             Mood
           </p>
-          <p className="text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+          <p className="text-sm leading-relaxed text-white/70">
             {musicalAnalysis.mood}
           </p>
         </div>
-        <div>
-          <p className="text-white/30 text-[10px] uppercase tracking-widest mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+        <div className="border-t border-white/[0.08] pt-4">
+          <p className="mb-2 text-[10px] uppercase tracking-widest text-white/30">
             Key Elements
           </p>
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+          <ul className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
             {Array.isArray(musicalAnalysis.keyElements) && musicalAnalysis.keyElements.map((el, i) => (
-              <li key={i} className="flex items-start gap-2 text-white/70 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-white/70">
                 <span className="mt-1 flex-shrink-0" style={{ color: 'var(--song-accent, #1DB954)' }}>
                   ·
                 </span>
@@ -40,11 +35,11 @@ const MusicalElementsCard: React.FC<MusicalElementsCardProps> = ({ musicalAnalys
             ))}
           </ul>
         </div>
-        <div>
-          <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+        <div className="border-t border-white/[0.08] pt-4">
+          <p className="mb-1 text-[10px] uppercase tracking-widest text-white/30">
             Soundscape
           </p>
-          <p className="text-white/75 text-sm leading-relaxed" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+          <p className="text-sm leading-relaxed text-white/70">
             {musicalAnalysis.soundscape}
           </p>
         </div>
