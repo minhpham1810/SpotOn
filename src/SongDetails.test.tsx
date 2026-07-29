@@ -1,10 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, Link } from 'react-router-dom';
 import { fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { vi, test, expect, beforeEach } from 'vitest';
 import SongDetails from './SongDetails';
 import { ToastProvider } from './contexts/ToastContext';
 import { SongInfo } from './types/song-info';
+import SpotifyAPI from './api/SpotifyAPI';
 
 vi.mock('./api/SpotifyAPI', () => ({
   default: {
@@ -25,6 +27,8 @@ const researchSongMock = vi.fn();
 vi.mock('./api/ResearchAgentAPI', () => ({
   default: { researchSong: (...args: unknown[]) => researchSongMock(...args) },
 }));
+
+const getTrackDetailsMock = vi.mocked(SpotifyAPI.getTrackDetails);
 
 vi.mock('./lib/coverAccentColor', () => ({
   extractCoverAccent: vi.fn().mockResolvedValue({
@@ -65,6 +69,41 @@ const baseReport: SongInfo = {
 
 beforeEach(() => {
   researchSongMock.mockReset();
+});
+
+test('exposes preview playback state through the hero button', async () => {
+  getTrackDetailsMock.mockResolvedValueOnce({
+    id: '1',
+    name: 'Test Song',
+    artist: 'Test Artist',
+    album: 'Test Album',
+    cover: 'cover.jpg',
+    releaseDate: '2020-01-01',
+    preview_url: 'https://cdn.example/preview.mp3',
+  });
+  const audio = {
+    play: vi.fn().mockResolvedValue(undefined),
+    pause: vi.fn(),
+    currentTime: 0,
+    onended: null,
+    onerror: null,
+  };
+  vi.stubGlobal('Audio', vi.fn(function () { return audio; }));
+  const user = userEvent.setup();
+
+  renderSongDetails();
+
+  const button = await screen.findByRole('button', { name: 'Preview' });
+  expect(button).toHaveAttribute('aria-pressed', 'false');
+
+  await user.click(button);
+  expect(await screen.findByRole('button', { name: 'Pause preview' })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('disables preview when Spotify provides no clip', async () => {
+  renderSongDetails();
+
+  expect(await screen.findByRole('button', { name: 'Preview unavailable' })).toBeDisabled();
 });
 
 test('shows research trace steps while the agent is working', async () => {

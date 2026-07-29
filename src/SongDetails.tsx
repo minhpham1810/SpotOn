@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from './contexts/ToastContext';
 import LoadingSpinner from './LoadingSpinner';
@@ -16,6 +16,7 @@ import CreditsCard from './components/song-details/CreditsCard';
 import KeyFindingsCard from './components/song-details/KeyFindingsCard';
 import GenreSourcesFooter from './components/song-details/GenreSourcesFooter';
 import SongDetailsHeader from './components/song-details/SongDetailsHeader';
+import { useAudioPreview } from './components/song-details/useAudioPreview';
 
 const DEFAULT_ACCENT: CoverAccent = {
   accent: '#1DB954',
@@ -39,6 +40,10 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
     const [error, setError] = useState<string | null>(null);
     const [researchSteps, setResearchSteps] = useState<ResearchStepEvent[]>([]);
     const [accent, setAccent] = useState<CoverAccent>(DEFAULT_ACCENT);
+    const handlePreviewError = useCallback(() => {
+        showToast('Unable to play this preview', 'error');
+    }, [showToast]);
+    const preview = useAudioPreview(song?.preview_url, handlePreviewError);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -126,7 +131,12 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
         <div className="max-w-[1200px] mx-auto p-6 md:p-8 min-h-screen flex flex-col" style={cssVars}>
             <SongDetailsHeader onBack={() => navigate('/')} onLogout={onLogout} />
 
-            <HeroSection song={song} onAddToPlaylist={handleSaveToPlaylist} />
+            <HeroSection
+                song={song}
+                onAddToPlaylist={handleSaveToPlaylist}
+                previewState={preview.state}
+                onTogglePreview={() => void preview.toggle()}
+            />
 
             {isLoadingInfo ? (
                 <div className="my-4 flex flex-col items-center gap-4 animate-fadeIn py-12">

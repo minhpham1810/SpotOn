@@ -1,14 +1,27 @@
 import React from 'react';
+import { Pause, Play, SpeakerSlash } from '@phosphor-icons/react';
 import type { TrackDetails } from '../../types/spotify';
+import type { AudioPreviewState } from './useAudioPreview';
 
 interface HeroSectionProps {
   song: TrackDetails;
   onAddToPlaylist: () => void;
+  previewState: AudioPreviewState;
+  onTogglePreview: () => void;
 }
 
-const HeroSection: React.FC<HeroSectionProps> = ({ song, onAddToPlaylist }) => {
+const HeroSection: React.FC<HeroSectionProps> = ({ song, onAddToPlaylist, previewState, onTogglePreview }) => {
   const parsedYear = song.releaseDate ? new Date(song.releaseDate).getFullYear() : NaN;
   const releaseYear = Number.isFinite(parsedYear) ? parsedYear : '';
+  const previewUnavailable = previewState === 'unavailable';
+  const previewPlaying = previewState === 'playing';
+  const previewLabel = previewUnavailable
+    ? 'Preview unavailable'
+    : previewPlaying
+      ? 'Pause preview'
+      : previewState === 'paused'
+        ? 'Resume preview'
+        : 'Preview';
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8 mb-8 animate-fadeIn">
@@ -59,9 +72,14 @@ const HeroSection: React.FC<HeroSectionProps> = ({ song, onAddToPlaylist }) => {
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/5 border border-white/15 text-white text-xs font-medium cursor-pointer hover:bg-white/10 transition-colors"
+            disabled={previewUnavailable}
+            aria-pressed={previewUnavailable ? undefined : previewPlaying}
+            aria-label={previewLabel}
+            onClick={onTogglePreview}
+            className="song-secondary-action"
           >
-            <span className="text-xs">▶</span> Preview
+            {previewUnavailable ? <SpeakerSlash /> : previewPlaying ? <Pause /> : <Play />}
+            <span>{previewLabel}</span>
           </button>
         </div>
       </div>
