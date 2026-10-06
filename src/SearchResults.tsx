@@ -88,7 +88,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             </div>
             <h3 className="font-syne text-xl font-bold text-white">A track is the beginning</h3>
             <p className="max-w-[42ch] text-sm leading-relaxed text-white/50">
-              Search the catalog, preview a recording, then open its full report for credits, context, and musical fingerprints.
+              Search the catalog, then open a track's full report for credits, context, and musical fingerprints.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[0.6875rem] uppercase tracking-[0.15em] text-white/30">
               <span>Search</span>

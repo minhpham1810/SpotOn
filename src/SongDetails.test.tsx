@@ -378,6 +378,8 @@ test('moves keyboard focus through back, logout, hero actions, then sources', as
   await user.tab();
   expect(screen.getByRole('button', { name: 'Preview' })).toHaveFocus();
   await user.tab();
+  expect(screen.getByRole('button', { name: 'Share card' })).toHaveFocus();
+  await user.tab();
   expect(screen.getByRole('link', { name: 'Genius' })).toHaveFocus();
 });
 

@@ -204,7 +204,7 @@ const MainContent: React.FC = () => {
                             <p className="mt-5 max-w-[58ch] text-sm leading-relaxed text-white/50 sm:text-base">
                                 {hasSearch
                                     ? `Explore matches for “${searchQuery}”, add a track to your playlist, or open its full research report.`
-                                    : 'Find any track, hear the available preview, and open a sourced report on the sound, story, and people behind it.'}
+                                    : 'Find any track and open a sourced report on the sound, story, and people behind it.'}
                             </p>
                             <div className="mt-8 max-w-[46rem]">
                                 <SearchBar onSearch={searchSpotify} isLoading={searchStatus === 'loading'} />

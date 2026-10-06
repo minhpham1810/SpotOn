@@ -20,6 +20,7 @@ import ResearchProgress from './components/song-details/ResearchProgress';
 import SongDetailsError from './components/song-details/SongDetailsError';
 import { useAudioPreview } from './components/song-details/useAudioPreview';
 import { hasSongInfoContent, normalizeSongInfo } from './lib/songInfoNormalizer';
+import { renderShareCard, shareOrDownload } from './lib/shareCard';
 
 const DEFAULT_ACCENT: CoverAccent = {
   accent: '#1DB954',
@@ -133,6 +134,22 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
         }
     };
 
+    const shareableInfo =
+        !isLoadingInfo && songInfo && typeof songInfo !== 'string' && hasSongInfoContent(songInfo) ? songInfo : null;
+
+    const handleShare = async () => {
+        if (!song || !shareableInfo) return;
+        try {
+            const blob = await renderShareCard(song, shareableInfo, accent);
+            const filename = `${song.name} - ${song.artist}`.replace(/[^\p{L}\p{N} _-]+/gu, '').trim() || 'song';
+            const result = await shareOrDownload(blob, `${filename}.png`, `${song.name} by ${song.artist}`);
+            if (result === 'downloaded') showToast('Card saved to your downloads');
+        } catch (error) {
+            console.error('Error creating share card:', error);
+            showToast('Could not create the share card', 'error');
+        }
+    };
+
     const cssVars = {
         '--song-accent': accent.accent,
         '--song-accent-foreground': accent.foreground,
@@ -159,6 +176,7 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
                         onAddToPlaylist={handleSaveToPlaylist}
                         previewState={preview.state}
                         onTogglePreview={() => void preview.toggle()}
+                        onShare={shareableInfo ? () => void handleShare() : undefined}
                     />
                     <section aria-label="Song research report" className="song-shell pb-20">
                         {isLoadingInfo ? <ResearchProgress steps={researchSteps} /> : researchError ? (

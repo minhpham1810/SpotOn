@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pause, Play, Plus, SpeakerSlash } from '@phosphor-icons/react';
+import { Pause, Play, Plus, ShareNetwork, SpeakerSlash } from '@phosphor-icons/react';
 import type { TrackDetails } from '../../types/spotify';
 import type { AudioPreviewState } from './useAudioPreview';
 
@@ -8,9 +8,10 @@ interface HeroSectionProps {
   onAddToPlaylist: () => void;
   previewState: AudioPreviewState;
   onTogglePreview: () => void;
+  onShare?: () => void;
 }
 
-const HeroSection: React.FC<HeroSectionProps> = ({ song, onAddToPlaylist, previewState, onTogglePreview }) => {
+const HeroSection: React.FC<HeroSectionProps> = ({ song, onAddToPlaylist, previewState, onTogglePreview, onShare }) => {
   const parsedYear = song.releaseDate ? new Date(song.releaseDate).getFullYear() : NaN;
   const releaseYear = Number.isFinite(parsedYear) ? parsedYear : '';
   const previewUnavailable = previewState === 'unavailable';
@@ -65,6 +66,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({ song, onAddToPlaylist, previe
               )}
               <span>{previewLabel}</span>
             </button>
+            {onShare && (
+              <button type="button" onClick={onShare} className="song-secondary-action">
+                <ShareNetwork size={18} weight="bold" aria-hidden="true" />
+                <span>Share card</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
