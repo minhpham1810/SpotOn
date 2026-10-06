@@ -33,7 +33,7 @@ export interface RunResearchAgentOptions {
 }
 
 const DEFAULT_MAX_ROUNDS = 6;
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 const WEB_SEARCH_TOOL_NAME = 'web_search';
 const MAX_WEB_SEARCH_CALLS = 2;
 
