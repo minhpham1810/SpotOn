@@ -11,7 +11,7 @@ vi.mock('./_lib/cache', () => ({
   setCachedReport: setCachedReportMock,
 }));
 
-vi.mock('./_lib/groqAgent', () => ({
+vi.mock('./_lib/researchAgent', () => ({
   runResearchAgent: runResearchAgentMock,
 }));
 

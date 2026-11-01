@@ -26,14 +26,17 @@ export interface AgentTool {
 export interface RunResearchAgentOptions {
   track: AgentTrack;
   tools: AgentTool[];
-  groqApiKey: string;
+  apiKey: string;
   maxRounds?: number;
   onStep?: (event: AgentStepEvent) => void;
   spotifyAudioFeatures?: Omit<SongInfoAudioFeatures, 'source'> | null;
 }
 
 const DEFAULT_MAX_ROUNDS = 6;
-const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+// Any OpenAI-compatible chat completions API works; defaults to Gemini's compatibility endpoint.
+const LLM_BASE_URL = (process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai').replace(/\/+$/, '');
+// flash-lite: on the free tier gemini-3.8-flash took ~100s per call and returned 503s (measured 2026-11-01).
+const LLM_MODEL = process.env.LLM_MODEL || 'gemini-3.5-flash-lite';
 const WEB_SEARCH_TOOL_NAME = 'web_search';
 const MAX_WEB_SEARCH_CALLS = 2;
 
@@ -67,27 +70,27 @@ For each finding in "findings", classify its confidence: "verified" if a tool re
 - "reachForThisWhen": one sentence framing a moment or feeling this song answers, not a genre or activity tag.${audioFeaturesGuidance}`;
 }
 
-interface GroqToolCall {
+interface ChatToolCall {
   id: string;
   type: 'function';
   function: { name: string; arguments: string };
 }
 
-interface GroqMessage {
+interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string | null;
-  tool_calls?: GroqToolCall[];
+  tool_calls?: ChatToolCall[];
   tool_call_id?: string;
 }
 
-async function callGroq(
+async function callLlm(
   apiKey: string,
-  messages: GroqMessage[],
+  messages: ChatMessage[],
   tools: AgentTool[],
   retryCount = 0
-): Promise<{ message: GroqMessage; finishReason: string }> {
+): Promise<{ message: ChatMessage }> {
   const body: Record<string, unknown> = {
-    model: GROQ_MODEL,
+    model: LLM_MODEL,
     messages,
     temperature: 0.7,
   };
@@ -103,7 +106,7 @@ async function callGroq(
     }));
   }
 
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const response = await fetch(`${LLM_BASE_URL}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -113,18 +116,20 @@ async function callGroq(
   });
 
   if (!response.ok) {
-    if (response.status === 429 && retryCount < 2) {
+    // 429 = rate limited, 503 = provider overloaded; both are transient.
+    if ((response.status === 429 || response.status === 503) && retryCount < 2) {
       const retryAfter = parseInt(response.headers.get('retry-after') || '10', 10) * 1000;
       await new Promise((resolve) => setTimeout(resolve, retryAfter));
-      return callGroq(apiKey, messages, tools, retryCount + 1);
+      return callLlm(apiKey, messages, tools, retryCount + 1);
     }
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Groq API error: ${response.status}`);
+    const body = await response.json().catch(() => ({}));
+    // Gemini wraps errors in an array: [{ error: { message } }].
+    const err = Array.isArray(body) ? body[0] : body;
+    throw new Error(err?.error?.message || `LLM API error: ${response.status}`);
   }
 
   const data = await response.json();
-  const choice = data.choices[0];
-  return { message: choice.message, finishReason: choice.finish_reason };
+  return { message: data.choices[0].message };
 }
 
 const ESTIMATED_AUDIO_FEATURE_AXES = ['danceability', 'energy', 'valence', 'acousticness', 'instrumentalness'] as const;
@@ -167,12 +172,12 @@ function parseFinalReport(
 }
 
 export async function runResearchAgent(options: RunResearchAgentOptions): Promise<SongInfo> {
-  const { track, tools, groqApiKey, onStep } = options;
+  const { track, tools, apiKey, onStep } = options;
   const maxRounds = options.maxRounds ?? DEFAULT_MAX_ROUNDS;
   const toolsByName = new Map(tools.map((tool) => [tool.name, tool]));
   let webSearchCalls = 0;
 
-  const messages: GroqMessage[] = [
+  const messages: ChatMessage[] = [
     {
       role: 'system',
       content:
@@ -188,12 +193,14 @@ export async function runResearchAgent(options: RunResearchAgentOptions): Promis
   ];
 
   for (let round = 0; round < maxRounds; round++) {
-    const { message, finishReason } = await callGroq(groqApiKey, messages, tools);
+    const { message } = await callLlm(apiKey, messages, tools);
+    // Echo the assistant message back unchanged: Gemini attaches provider fields (e.g. thought signatures) to it.
     messages.push(message);
 
-    if (finishReason !== 'tool_calls' || !message.tool_calls?.length) {
+    // Decide on tool_calls, not finish_reason: OpenAI-compatible providers disagree on finish_reason for tool turns.
+    if (!message.tool_calls?.length) {
       if (!message.content) {
-        throw new Error('Groq returned an empty final response');
+        throw new Error('The LLM returned an empty final response');
       }
       return parseFinalReport(message.content, options.spotifyAudioFeatures);
     }
@@ -234,14 +241,14 @@ export async function runResearchAgent(options: RunResearchAgentOptions): Promis
     }
   }
 
-  const { message } = await callGroq(
-    groqApiKey,
+  const { message } = await callLlm(
+    apiKey,
     [...messages, { role: 'user', content: 'Stop researching now and respond with the final JSON report only.' }],
     []
   );
 
   if (!message.content) {
-    throw new Error('Groq returned an empty final response after round cap');
+    throw new Error('The LLM returned an empty final response after round cap');
   }
   return parseFinalReport(message.content, options.spotifyAudioFeatures);
 }

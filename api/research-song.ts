@@ -1,4 +1,4 @@
-import { runResearchAgent, type AgentTool } from './_lib/groqAgent';
+import { runResearchAgent, type AgentTool } from './_lib/researchAgent';
 import { getCachedReport, setCachedReport } from './_lib/cache';
 import { spotifySearch, spotifyArtistTopTracks } from './_lib/tools/spotifyTools';
 import { geniusLookup } from './_lib/tools/geniusTool';
@@ -118,7 +118,7 @@ export default async function handler(request: Request): Promise<Response> {
         const report: SongInfo = await runResearchAgent({
           track: { name: trackName, artist: artistName, album },
           tools: buildTools(),
-          groqApiKey: process.env.GROQ_API_KEY as string,
+          apiKey: process.env.LLM_API_KEY as string,
           spotifyAudioFeatures: audioFeatures,
           onStep: (step) => send('step', step),
         });

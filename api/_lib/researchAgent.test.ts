@@ -1,11 +1,11 @@
 import { test, expect, vi, beforeEach } from 'vitest';
-import { runResearchAgent, type AgentTool } from './groqAgent';
+import { runResearchAgent, type AgentTool } from './researchAgent';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
 });
 
-function groqResponse(message: Record<string, unknown>, finishReason: string) {
+function llmResponse(message: Record<string, unknown>, finishReason: string) {
   return {
     ok: true,
     json: async () => ({ choices: [{ message, finish_reason: finishReason }] }),
@@ -34,7 +34,7 @@ test('runResearchAgent calls a requested tool then returns the final parsed repo
   const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
   mockFetch
     .mockResolvedValueOnce(
-      groqResponse(
+      llmResponse(
         {
           role: 'assistant',
           content: null,
@@ -45,7 +45,7 @@ test('runResearchAgent calls a requested tool then returns the final parsed repo
         'tool_calls'
       )
     )
-    .mockResolvedValueOnce(groqResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+    .mockResolvedValueOnce(llmResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
 
   const execute = vi.fn().mockResolvedValue('Lyrics info found.');
   const tool: AgentTool = {
@@ -64,7 +64,7 @@ test('runResearchAgent calls a requested tool then returns the final parsed repo
   const report = await runResearchAgent({
     track: { name: 'Song', artist: 'Artist' },
     tools: [tool],
-    groqApiKey: 'key',
+    apiKey: 'key',
     onStep: (e) => steps.push(e.tool),
   });
 
@@ -92,9 +92,9 @@ test('runResearchAgent stops after maxRounds and forces a final report', async (
     tool_calls: [{ id: 'call1', type: 'function', function: { name: 'noop', arguments: '{}' } }],
   };
   mockFetch
-    .mockResolvedValueOnce(groqResponse(toolCallMessage, 'tool_calls'))
-    .mockResolvedValueOnce(groqResponse(toolCallMessage, 'tool_calls'))
-    .mockResolvedValueOnce(groqResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+    .mockResolvedValueOnce(llmResponse(toolCallMessage, 'tool_calls'))
+    .mockResolvedValueOnce(llmResponse(toolCallMessage, 'tool_calls'))
+    .mockResolvedValueOnce(llmResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
 
   const tool: AgentTool = {
     name: 'noop',
@@ -107,7 +107,7 @@ test('runResearchAgent stops after maxRounds and forces a final report', async (
   const report = await runResearchAgent({
     track: { name: 'Song', artist: 'Artist' },
     tools: [tool],
-    groqApiKey: 'key',
+    apiKey: 'key',
     maxRounds: 2,
   });
 
@@ -124,12 +124,12 @@ test('runResearchAgent retries once on a 429 and then succeeds', async () => {
       headers: new Headers({ 'retry-after': '0' }),
       json: async () => ({}),
     })
-    .mockResolvedValueOnce(groqResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+    .mockResolvedValueOnce(llmResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
 
   const report = await runResearchAgent({
     track: { name: 'Song', artist: 'Artist' },
     tools: [],
-    groqApiKey: 'key',
+    apiKey: 'key',
   });
 
   expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -140,7 +140,7 @@ test('runResearchAgent handles tool.execute() failure gracefully and continues',
   const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
   mockFetch
     .mockResolvedValueOnce(
-      groqResponse(
+      llmResponse(
         {
           role: 'assistant',
           content: null,
@@ -151,7 +151,7 @@ test('runResearchAgent handles tool.execute() failure gracefully and continues',
         'tool_calls'
       )
     )
-    .mockResolvedValueOnce(groqResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+    .mockResolvedValueOnce(llmResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
 
   const execute = vi.fn().mockRejectedValue(new Error('Tool crashed'));
   const tool: AgentTool = {
@@ -165,7 +165,7 @@ test('runResearchAgent handles tool.execute() failure gracefully and continues',
   const report = await runResearchAgent({
     track: { name: 'Song', artist: 'Artist' },
     tools: [tool],
-    groqApiKey: 'key',
+    apiKey: 'key',
   });
 
   expect(execute).toHaveBeenCalled();
@@ -175,12 +175,12 @@ test('runResearchAgent handles tool.execute() failure gracefully and continues',
 test('runResearchAgent parses final report with markdown code fence wrapping', async () => {
   const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
   const wrappedReportJson = `\`\`\`json\n${finalReportJson}\n\`\`\``;
-  mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: wrappedReportJson }, 'stop'));
+  mockFetch.mockResolvedValueOnce(llmResponse({ role: 'assistant', content: wrappedReportJson }, 'stop'));
 
   const report = await runResearchAgent({
     track: { name: 'Song', artist: 'Artist' },
     tools: [],
-    groqApiKey: 'key',
+    apiKey: 'key',
   });
 
   expect(report.summary).toBe('A summary.');
@@ -196,10 +196,10 @@ test('runResearchAgent caps web_search at 2 calls and short-circuits further req
   });
 
   mockFetch
-    .mockResolvedValueOnce(groqResponse(webSearchCallMessage('call1'), 'tool_calls'))
-    .mockResolvedValueOnce(groqResponse(webSearchCallMessage('call2'), 'tool_calls'))
-    .mockResolvedValueOnce(groqResponse(webSearchCallMessage('call3'), 'tool_calls'))
-    .mockResolvedValueOnce(groqResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+    .mockResolvedValueOnce(llmResponse(webSearchCallMessage('call1'), 'tool_calls'))
+    .mockResolvedValueOnce(llmResponse(webSearchCallMessage('call2'), 'tool_calls'))
+    .mockResolvedValueOnce(llmResponse(webSearchCallMessage('call3'), 'tool_calls'))
+    .mockResolvedValueOnce(llmResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
 
   const execute = vi.fn().mockResolvedValue('Some web results.');
   const tool: AgentTool = {
@@ -217,7 +217,7 @@ test('runResearchAgent caps web_search at 2 calls and short-circuits further req
   const report = await runResearchAgent({
     track: { name: 'Song', artist: 'Artist' },
     tools: [tool],
-    groqApiKey: 'key',
+    apiKey: 'key',
   });
 
   expect(execute).toHaveBeenCalledTimes(2);
@@ -238,12 +238,12 @@ test('runResearchAgent caps web_search at 2 calls and short-circuits further req
 
 test('runResearchAgent uses measured Spotify audio features directly without asking the model to estimate', async () => {
   const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
-  mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+  mockFetch.mockResolvedValueOnce(llmResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
 
   const report = await runResearchAgent({
     track: { name: 'Song', artist: 'Artist' },
     tools: [],
-    groqApiKey: 'key',
+    apiKey: 'key',
     spotifyAudioFeatures: {
       tempo: 118,
       key: 'C# Major',
@@ -285,12 +285,12 @@ test('runResearchAgent asks the model to estimate audioFeatures when Spotify dat
       instrumentalness: 0.05,
     },
   });
-  mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: estimatedReportJson }, 'stop'));
+  mockFetch.mockResolvedValueOnce(llmResponse({ role: 'assistant', content: estimatedReportJson }, 'stop'));
 
   const report = await runResearchAgent({
     track: { name: 'Song', artist: 'Artist' },
     tools: [],
-    groqApiKey: 'key',
+    apiKey: 'key',
     spotifyAudioFeatures: null,
   });
 
@@ -324,12 +324,12 @@ test('runResearchAgent omits audioFeatures when the estimate has a non-numeric a
       instrumentalness: 0.05,
     },
   });
-  mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: malformedReportJson }, 'stop'));
+  mockFetch.mockResolvedValueOnce(llmResponse({ role: 'assistant', content: malformedReportJson }, 'stop'));
 
   const report = await runResearchAgent({
     track: { name: 'Song', artist: 'Artist' },
     tools: [],
-    groqApiKey: 'key',
+    apiKey: 'key',
     spotifyAudioFeatures: null,
   });
 
@@ -342,12 +342,12 @@ test('runResearchAgent round-trips a speculative finding with a null source', as
     ...JSON.parse(finalReportJson),
     findings: [{ text: 'This likely nods to 90s trip-hop.', confidence: 'speculative', source: null }],
   });
-  mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: reportWithSpeculativeFinding }, 'stop'));
+  mockFetch.mockResolvedValueOnce(llmResponse({ role: 'assistant', content: reportWithSpeculativeFinding }, 'stop'));
 
   const report = await runResearchAgent({
     track: { name: 'Song', artist: 'Artist' },
     tools: [],
-    groqApiKey: 'key',
+    apiKey: 'key',
   });
 
   expect(report.findings).toEqual([
@@ -360,13 +360,13 @@ test('runResearchAgent degrades findings to an empty array when missing from the
   const reportWithoutFindings = JSON.parse(finalReportJson);
   delete reportWithoutFindings.findings;
   mockFetch.mockResolvedValueOnce(
-    groqResponse({ role: 'assistant', content: JSON.stringify(reportWithoutFindings) }, 'stop')
+    llmResponse({ role: 'assistant', content: JSON.stringify(reportWithoutFindings) }, 'stop')
   );
 
   const report = await runResearchAgent({
     track: { name: 'Song', artist: 'Artist' },
     tools: [],
-    groqApiKey: 'key',
+    apiKey: 'key',
   });
 
   expect(report.findings).toEqual([]);
@@ -374,13 +374,81 @@ test('runResearchAgent degrades findings to an empty array when missing from the
 
 test('runResearchAgent omits audioFeatures when spotifyAudioFeatures is not provided', async () => {
   const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
-  mockFetch.mockResolvedValueOnce(groqResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+  mockFetch.mockResolvedValueOnce(llmResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
 
   const report = await runResearchAgent({
     track: { name: 'Song', artist: 'Artist' },
     tools: [],
-    groqApiKey: 'key',
+    apiKey: 'key',
   });
 
   expect(report.audioFeatures).toBeUndefined();
+});
+
+test('runResearchAgent calls the Gemini OpenAI-compatible endpoint with the default model', async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  mockFetch.mockResolvedValueOnce(llmResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+
+  await runResearchAgent({ track: { name: 'Song', artist: 'Artist' }, tools: [], apiKey: 'key' });
+
+  const [url, init] = mockFetch.mock.calls[0];
+  expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+  expect(JSON.parse(init.body).model).toBe('gemini-3.5-flash-lite');
+  expect(init.headers.Authorization).toBe('Bearer key');
+});
+
+test('runResearchAgent runs tool calls even when the provider reports finish_reason "stop"', async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  const toolCallMessage = {
+    role: 'assistant',
+    content: null,
+    tool_calls: [{ id: 'call1', type: 'function', function: { name: 'lookup_lyrics', arguments: '{"query":"q"}' } }],
+    extra_content: { google: { thought_signature: 'sig' } },
+  };
+  mockFetch
+    .mockResolvedValueOnce(llmResponse(toolCallMessage, 'stop'))
+    .mockResolvedValueOnce(llmResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+
+  const execute = vi.fn().mockResolvedValue('Lyrics info found.');
+  const tool: AgentTool = {
+    name: 'lookup_lyrics',
+    label: 'Looking up lyrics',
+    description: 'Looks up lyrics info',
+    parameters: { type: 'object', properties: { query: { type: 'string', description: 'q' } }, required: ['query'] },
+    execute,
+  };
+
+  const report = await runResearchAgent({ track: { name: 'Song', artist: 'Artist' }, tools: [tool], apiKey: 'key' });
+
+  expect(execute).toHaveBeenCalledWith({ query: 'q' });
+  expect(report.summary).toBe('A summary.');
+  // The assistant turn goes back to the provider unchanged, including provider-specific fields.
+  const secondBody = JSON.parse(mockFetch.mock.calls[1][1].body);
+  expect(secondBody.messages).toContainEqual(toolCallMessage);
+});
+
+test('runResearchAgent retries a 503 from an overloaded provider', async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  mockFetch
+    .mockResolvedValueOnce({ ok: false, status: 503, headers: new Headers({ 'retry-after': '0' }), json: async () => ({}) })
+    .mockResolvedValueOnce(llmResponse({ role: 'assistant', content: finalReportJson }, 'stop'));
+
+  const report = await runResearchAgent({ track: { name: 'Song', artist: 'Artist' }, tools: [], apiKey: 'key' });
+
+  expect(report.summary).toBe('A summary.');
+  expect(mockFetch).toHaveBeenCalledTimes(2);
+});
+
+test("runResearchAgent surfaces Gemini's array-wrapped error message", async () => {
+  const mockFetch = fetch as unknown as ReturnType<typeof vi.fn>;
+  mockFetch.mockResolvedValueOnce({
+    ok: false,
+    status: 400,
+    headers: new Headers(),
+    json: async () => [{ error: { code: 400, message: 'API key not valid.' } }],
+  });
+
+  await expect(
+    runResearchAgent({ track: { name: 'Song', artist: 'Artist' }, tools: [], apiKey: 'bad' })
+  ).rejects.toThrow('API key not valid.');
 });

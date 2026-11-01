@@ -23,7 +23,7 @@ No more generic recommendations. Just music that feels **SpotOn**.
   - Credits, key findings (rated verified / inferred / speculative with sources), genres, and cited sources
   - An audio preview player and cover-art-driven accent theming
 - **Save to Playlist** – Build a local playlist from search results or a song's detail page
-- **Deep Research Agent** – A multi-step, tool-calling AI agent (Groq/Llama 3.3 70B) that searches Spotify, Genius, and the live web before generating the cited song report above, streamed live via SSE with step-by-step progress
+- **Deep Research Agent** – A multi-step, tool-calling AI agent (Gemini Flash by default, via any OpenAI-compatible API) that searches Spotify, Genius, and the live web before generating the cited song report above, streamed live via SSE with step-by-step progress
 - **Intuitive Navigation** – Smooth transitions between search, playlist, and song detail views using React Router
 
 ---
@@ -43,7 +43,7 @@ No more generic recommendations. Just music that feels **SpotOn**.
 ### AI & APIs
 
 - **Spotify Web API**
-- **Groq** (Llama 3.3 70B, tool-calling)
+- **Gemini API** (`gemini-3.5-flash-lite` by default, tool-calling via its OpenAI-compatible endpoint; set `LLM_BASE_URL` / `LLM_MODEL` to use another provider)
 - **Genius API**
 - **Tavily API** (live web search)
 - **Upstash Redis** (research report caching)
@@ -52,9 +52,9 @@ No more generic recommendations. Just music that feels **SpotOn**.
 
 - **`api/research-song.ts`** – a Vercel Edge Function that:
   - Checks Upstash Redis for a cached report before doing any work
-  - Runs the multi-step research agent (`api/_lib/groqAgent.ts`) with tool-calling over Spotify, Genius, and web search
+  - Runs the multi-step research agent (`api/_lib/researchAgent.ts`) with tool-calling over Spotify, Genius, and web search
   - Fetches Spotify's audio features for the track, falling back to an AI estimate when unavailable
-  - Manages server-only API credentials (Groq, Tavily, Genius, Spotify, Upstash Redis)
+  - Manages server-only API credentials (LLM, Tavily, Genius, Spotify, Upstash Redis)
   - Streams progress steps and the final cited report back to the client over Server-Sent Events
 
 ---
@@ -76,7 +76,7 @@ No more generic recommendations. Just music that feels **SpotOn**.
    ```
    vercel dev
    ```
-   Set the server-only env vars (listed in `.env.example`'s comment — `GROQ_API_KEY`, `TAVILY_API_KEY`, `GENIUS_ACCESS_TOKEN`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`) via `vercel env pull` or manually in the Vercel dashboard.
+   Set the server-only env vars (listed in `.env.example`'s comment — `LLM_API_KEY`, `TAVILY_API_KEY`, `GENIUS_ACCESS_TOKEN`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`) via `vercel env pull` or manually in the Vercel dashboard.
 
 4. **For plain client-side testing** (without the research agent), start the dev server:
    ```
