@@ -209,3 +209,11 @@ Environment: macOS arm64, Colima VM (2 vCPU / 4 GB), Docker 29.5.2, Compose 5.6.
 - End-to-end through the container with a local Redis behind serverless-redis-http: fresh report 4.3 s (2 `step` events + `report`, Gemini flash-lite, tools without keys degraded gracefully); repeat request served from cache in < 0.1 s; key stored with TTL 2,592,000 s.
 - `docker compose stop app` took 0.1 s (SIGTERM handled; no 10 s kill timeout).
 - Spotify redirect now `${location.origin}/callback`; removed the never-read `VITE_SPOTIFY_REDIRECT_URI`.
+
+### Stage 2: abuse and cost protection (2026-11-01)
+- `api/_lib/rateLimit.ts`: fixed-window counters in the existing Redis. Defaults 5 fresh reports per IP per hour and 15 per day globally (15 × ≤2 Tavily credits × 31 days = 930 < 1,000 free). Cached reports bypass the limiter. Blocked callers don't consume the global budget.
+- Handler order: validate (trackId `^[A-Za-z0-9_-]{1,64}$`, text ≤ 200 chars) → cache → budget → agent. Over limit = HTTP 429 + `Retry-After`; limiter error = 503 (fail closed). UI shows the server's message.
+- `server/index.ts` overwrites `x-real-ip` with the socket address so clients can't pick their own bucket. Cloud Run's correct `X-Forwarded-For` hop is a Stage 4 task.
+- Tests: 143 pass (13 new across limiter, handler, server, client).
+- Container drill (LLM pointed at a dead address so no quota was spent): requests 1–5 → 200, 6–7 → 429 with `Retry-After: 2350`; cached report still 200 while limited; bad trackId → 400; global counter stayed at 5 while the IP counter reached 8. With the Redis proxy stopped: fresh request → 503 `Retry-After: 60`, `/healthz` still 200.
+- Observed: behind Docker port mapping all local clients share one IP (`::ffff:172.18.0.1`, the bridge gateway).
