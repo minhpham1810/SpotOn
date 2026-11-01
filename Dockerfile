@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- build: needs dev dependencies (vite, tsc, rolldown) ----
-FROM node:24-alpine AS build
+FROM node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85 AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -12,9 +12,12 @@ ARG VITE_SPOTIFY_CLIENT_ID
 RUN VITE_SPOTIFY_CLIENT_ID="$VITE_SPOTIFY_CLIENT_ID" npm run build && npm run build:server
 
 # ---- runtime: no node_modules, no source ----
-# shortcut: tag not digest-pinned, so rebuilds pick up base-image patches unreviewed; pin the digest once Dependabot updates it (Stage 3).
-FROM node:24-alpine
+# Base image pinned by digest (multi-arch index); Dependabot proposes updates.
+FROM node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
 ENV NODE_ENV=production PORT=8080
+# The app only needs the node binary. npm and corepack ship their own dependencies,
+# which is where all of Trivy's HIGH findings were; remove them from the runtime.
+RUN rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 WORKDIR /app
 # Files stay root-owned, so the app user can read but not modify its own code.
 COPY --from=build /app/dist ./dist

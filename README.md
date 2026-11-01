@@ -95,6 +95,10 @@ docker compose down              # add -v to also wipe the local cache
 
 Server keys come from `.env` at runtime and are never baked into the image; any missing tool key just degrades that tool. The image runs as a non-root user on a read-only filesystem. Without Docker: `npm run build && npm run build:server && npm start`.
 
+### Container CI
+
+`.github/workflows/container.yml` builds the image on every PR and push to `master`, boots it with `scripts/smoke-test.sh` (health check, non-root user, read-only filesystem, routes, graceful stop), and fails on fixable HIGH/CRITICAL vulnerabilities found by Trivy. It also rescans weekly. Pushes to `master` then publish `ghcr.io/minhpham1810/spoton:sha-<commit>` with provenance and an SBOM, using only the workflow's `GITHUB_TOKEN`. Set the public Spotify client ID as a repository variable: `gh variable set VITE_SPOTIFY_CLIENT_ID`. Run the same smoke test locally with `docker build -t spoton:local . && scripts/smoke-test.sh spoton:local`.
+
 ### Rate limits
 
 Fresh reports spend LLM and Tavily quota, so they are limited (cached reports are not): 5 per client IP per hour and 15 per day in total by default (`RESEARCH_LIMIT_PER_IP_HOUR`, `RESEARCH_LIMIT_GLOBAL_PER_DAY`). 15/day keeps the worst case inside Tavily's 1,000 free monthly credits. Over the limit the API returns `429` with `Retry-After`; if Redis is unreachable it refuses fresh runs with `503` rather than spending quota without counting.
