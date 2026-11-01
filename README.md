@@ -95,6 +95,10 @@ docker compose down              # add -v to also wipe the local cache
 
 Server keys come from `.env` at runtime and are never baked into the image; any missing tool key just degrades that tool. The image runs as a non-root user on a read-only filesystem. Without Docker: `npm run build && npm run build:server && npm start`.
 
+### Rate limits
+
+Fresh reports spend LLM and Tavily quota, so they are limited (cached reports are not): 5 per client IP per hour and 15 per day in total by default (`RESEARCH_LIMIT_PER_IP_HOUR`, `RESEARCH_LIMIT_GLOBAL_PER_DAY`). 15/day keeps the worst case inside Tavily's 1,000 free monthly credits. Over the limit the API returns `429` with `Retry-After`; if Redis is unreachable it refuses fresh runs with `503` rather than spending quota without counting.
+
 > **Note for deployments (e.g. Vercel):** this project was migrated from Create React App to Vite, so env vars must use the `VITE_` prefix instead of the old `REACT_APP_` prefix. If your hosting dashboard still has `REACT_APP_SPOTIFY_CLIENT_ID` configured, rename it to `VITE_SPOTIFY_CLIENT_ID` in the dashboard — this cannot be changed from the codebase.
 
 ### Testing & linting

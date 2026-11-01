@@ -1,5 +1,6 @@
 import { runResearchAgent, type AgentTool } from './_lib/researchAgent';
 import { getCachedReport, setCachedReport } from './_lib/cache';
+import { takeResearchBudget, clientIp, type ResearchBudget } from './_lib/rateLimit';
 import { spotifySearch, spotifyArtistTopTracks } from './_lib/tools/spotifyTools';
 import { geniusLookup } from './_lib/tools/geniusTool';
 import { webSearch } from './_lib/tools/webSearchTool';
@@ -75,6 +76,27 @@ function buildTools(): AgentTool[] {
   ];
 }
 
+function jsonError(status: number, error: string, headers: Record<string, string> = {}): Response {
+  return new Response(JSON.stringify({ error }), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...headers },
+  });
+}
+
+function sseResponse(stream: ReadableStream): Response {
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    },
+  });
+}
+
+// trackId becomes a cache key and the text fields go into the LLM prompt, so bound both.
+const TRACK_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+const MAX_TEXT_LENGTH = 200;
+
 export default async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const trackId = url.searchParams.get('trackId');
@@ -83,10 +105,46 @@ export default async function handler(request: Request): Promise<Response> {
   const album = url.searchParams.get('album') ?? undefined;
 
   if (!trackId || !trackName || !artistName) {
-    return new Response(JSON.stringify({ error: 'trackId, name, and artist are required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(400, 'trackId, name, and artist are required');
+  }
+  if (!TRACK_ID_PATTERN.test(trackId) || [trackName, artistName, album ?? ''].some((v) => v.length > MAX_TEXT_LENGTH)) {
+    return jsonError(400, 'trackId must be 1-64 letters, digits, - or _; name, artist and album at most 200 characters');
+  }
+
+  let cached: SongInfo | null = null;
+  try {
+    cached = await getCachedReport(trackId);
+  } catch (cacheError) {
+    console.error('getCachedReport failed, falling back to a fresh run:', cacheError);
+  }
+
+  if (cached) {
+    const report = cached;
+    return sseResponse(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(sseEvent('report', report)));
+          controller.close();
+        },
+      })
+    );
+  }
+
+  // Fail closed: if the limiter can't count, don't spend LLM/Tavily quota blind.
+  let budget: ResearchBudget;
+  try {
+    budget = await takeResearchBudget(clientIp(request));
+  } catch (limitError) {
+    console.error('takeResearchBudget failed, refusing the fresh run:', limitError);
+    return jsonError(503, 'New song reports are temporarily unavailable. Please try again shortly.', { 'Retry-After': '60' });
+  }
+  if (!budget.allowed) {
+    const minutes = Math.ceil(budget.retryAfterSeconds / 60);
+    const message =
+      budget.reason === 'ip'
+        ? `You've reached the limit for new song reports. Try again in about ${minutes} minutes.`
+        : `SpotOn has used today's budget for new song reports. Try again in about ${Math.ceil(minutes / 60)} hours.`;
+    return jsonError(429, message, { 'Retry-After': String(budget.retryAfterSeconds) });
   }
 
   const stream = new ReadableStream({
@@ -95,18 +153,6 @@ export default async function handler(request: Request): Promise<Response> {
       const send = (event: string, data: unknown) => controller.enqueue(encoder.encode(sseEvent(event, data)));
 
       try {
-        let cached: SongInfo | null = null;
-        try {
-          cached = await getCachedReport(trackId);
-        } catch (cacheError) {
-          console.error('getCachedReport failed, falling back to a fresh run:', cacheError);
-        }
-
-        if (cached) {
-          send('report', cached);
-          return;
-        }
-
         let audioFeatures: Awaited<ReturnType<typeof spotifyAudioFeatures>> | null = null;
         try {
           audioFeatures = await spotifyAudioFeatures(trackId, getSpotifyCreds());
@@ -136,11 +182,5 @@ export default async function handler(request: Request): Promise<Response> {
     },
   });
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-    },
-  });
+  return sseResponse(stream);
 }

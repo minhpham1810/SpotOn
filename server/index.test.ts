@@ -88,3 +88,15 @@ test('encoded path traversal cannot read outside dist', async () => {
   const res = await fetch(`${baseUrl}/..%2F..%2Fetc%2Fpasswd`);
   expect(res.status).toBe(400);
 });
+
+test('the API sees the real socket address in x-real-ip, not a client-supplied one', async () => {
+  apiHandler.mockClear();
+  const spoofed = await fetch(`${baseUrl}/api/research-song?trackId=t2&name=n&artist=a`, {
+    headers: { 'x-real-ip': '6.6.6.6' },
+  });
+  releaseSecondEvent();
+  await spoofed.text();
+
+  const request = apiHandler.mock.calls[0][0];
+  expect(request.headers.get('x-real-ip')).toBe('127.0.0.1');
+});

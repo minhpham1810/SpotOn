@@ -32,6 +32,8 @@ function toRequest(req: IncomingMessage): Request {
     if (Array.isArray(value)) value.forEach((v) => headers.append(name, v));
     else if (value !== undefined) headers.set(name, value);
   }
+  // The rate limiter keys on x-real-ip; never trust a client-sent value.
+  headers.set('x-real-ip', req.socket.remoteAddress ?? 'unknown');
   // shortcut: GET/HEAD only (the only API route is GET); add a body via Readable.toWeb(req) when a POST route exists.
   return new Request(new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`), {
     method: req.method,
