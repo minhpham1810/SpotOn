@@ -33,8 +33,8 @@ export async function takeResearchBudget(clientIp: string, now = Date.now()): Pr
   return { allowed: true };
 }
 
-// Vercel sets x-real-ip itself; server/index.ts overwrites it with the socket address.
-// shortcut: behind Cloud Run the socket is Google's proxy, so pick the right X-Forwarded-For hop in Stage 4.
+// Vercel sets x-real-ip itself; server/index.ts overwrites it (socket address, or the
+// X-Forwarded-For entry appended by TRUSTED_PROXY_HOPS trusted proxies on Cloud Run).
 export function clientIp(request: Request): string {
   return request.headers.get('x-real-ip')?.trim() || 'unknown';
 }

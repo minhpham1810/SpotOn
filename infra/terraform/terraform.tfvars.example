@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars (gitignored) and fill in.
+project_id         = "spoton-ops-XXXX"
+billing_account_id = "XXXXXX-XXXXXX-XXXXXX"
+
+# Public values for the Cloud Run service
+spotify_client_id      = ""
+upstash_redis_rest_url = ""
+
+# Demo lifecycle: scripts/demo-up.sh sets these via -var instead of editing this file.
+# service_enabled = false
+# image           = ""

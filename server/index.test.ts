@@ -100,3 +100,18 @@ test('the API sees the real socket address in x-real-ip, not a client-supplied o
   const request = apiHandler.mock.calls[0][0];
   expect(request.headers.get('x-real-ip')).toBe('127.0.0.1');
 });
+
+test('clientAddress takes the entry the trusted proxy appended, ignoring client-written ones', async () => {
+  const { clientAddress } = await import('./index');
+  const req = (xff: string | undefined) =>
+    ({ headers: xff ? { 'x-forwarded-for': xff } : {}, socket: { remoteAddress: '10.0.0.1' } }) as never;
+
+  // Client forged "6.6.6.6"; Cloud Run's front end appended the real 203.0.113.7.
+  expect(clientAddress(req('6.6.6.6, 203.0.113.7'), 1)).toBe('203.0.113.7');
+  expect(clientAddress(req('203.0.113.7'), 1)).toBe('203.0.113.7');
+  // No trusted proxies: the header is ignored entirely.
+  expect(clientAddress(req('6.6.6.6'), 0)).toBe('10.0.0.1');
+  // Fewer entries than hops: fall back to the socket rather than guess.
+  expect(clientAddress(req('203.0.113.7'), 2)).toBe('10.0.0.1');
+  expect(clientAddress(req(undefined), 1)).toBe('10.0.0.1');
+});

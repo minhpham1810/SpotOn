@@ -37,3 +37,8 @@ CLAUDE.md
 
 # server bundle (npm run build:server)
 /dist-server
+
+# Terraform local state and inputs (state can hold resource IDs; inputs hold account IDs)
+infra/terraform/.terraform/
+infra/terraform/*.tfstate*
+infra/terraform/terraform.tfvars

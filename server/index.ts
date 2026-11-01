@@ -26,6 +26,19 @@ const MIME_TYPES: Record<string, string> = {
   '.woff2': 'font/woff2',
 };
 
+// Behind N trusted proxies (Cloud Run's front end = 1), each appends the address it saw to
+// X-Forwarded-For, so the real client is N entries from the right. Entries further left were
+// written by the client and are ignored. With 0 hops (local Docker), use the socket address.
+export function clientAddress(req: IncomingMessage, trustedHops = Number(process.env.TRUSTED_PROXY_HOPS ?? 0)): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (trustedHops > 0 && typeof forwarded === 'string') {
+    const hops = forwarded.split(',').map((s) => s.trim()).filter(Boolean);
+    const candidate = hops[hops.length - trustedHops];
+    if (candidate) return candidate;
+  }
+  return req.socket.remoteAddress ?? 'unknown';
+}
+
 function toRequest(req: IncomingMessage): Request {
   const headers = new Headers();
   for (const [name, value] of Object.entries(req.headers)) {
@@ -33,7 +46,7 @@ function toRequest(req: IncomingMessage): Request {
     else if (value !== undefined) headers.set(name, value);
   }
   // The rate limiter keys on x-real-ip; never trust a client-sent value.
-  headers.set('x-real-ip', req.socket.remoteAddress ?? 'unknown');
+  headers.set('x-real-ip', clientAddress(req));
   // shortcut: GET/HEAD only (the only API route is GET); add a body via Readable.toWeb(req) when a POST route exists.
   return new Request(new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`), {
     method: req.method,
