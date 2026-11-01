@@ -34,3 +34,6 @@ yarn-debug.log*
 yarn-error.log*
 
 CLAUDE.md
+
+# server bundle (npm run build:server)
+/dist-server
