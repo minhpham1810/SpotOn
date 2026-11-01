@@ -34,8 +34,11 @@ Artifact Registry (us-east1, keep newest 3) ──▶ Cloud Run "spoton" (min 0,
    gcloud billing accounts list
    gcloud billing projects link spoton-ops-<suffix> --billing-account <ID>
    ```
+   Bootstrap (once): Terraform reads the project through Cloud Resource Manager before it can enable APIs, so enable that one by hand:
+   `gcloud services enable cloudresourcemanager.googleapis.com serviceusage.googleapis.com --project spoton-ops-<suffix>`
+   Don't link billing to the `gen-lang-client-*` projects AI Studio creates; that can take the Gemini key off the free tier.
 4. `cp infra/terraform/terraform.tfvars.example infra/terraform/terraform.tfvars`, fill in project, billing account, Spotify client ID, Upstash URL.
-5. `cd infra/terraform && terraform init && terraform apply` (foundation only; `service_enabled` defaults to false).
+5. `cd infra/terraform && terraform init && terraform apply` (foundation only; `service_enabled` defaults to false). Right after APIs are enabled, a few creates can fail with 403 "...denied (or it may not exist)": that is propagation, not permissions. Wait a minute and apply again.
 6. `scripts/gcp-set-secrets.sh <project-id>` (hidden input; values never stored on disk or in state).
 7. Point CI at it (values are identifiers, not credentials):
    ```
