@@ -72,6 +72,20 @@ Return to normal with `--to-latest`.
 
 **Full teardown**: `scripts/gcp-teardown.sh` (destroys everything, then lists leftovers; exits non-zero if any). Last resort: `gcloud projects delete <project-id>`.
 
+## Known gotchas
+
+- **Upstash deletes free databases after 14 days with no activity.** The original SpotOn database was found deleted on 2026-11-01 and replaced with `spoton-cache` (us-east-1). Production degrades quietly (cache misses only) on `master` before PR #2, but with the rate limiter it fails closed: every fresh report returns 503. Keep some traffic flowing, or check the Upstash console before demos. Open item: a scheduled keepalive.
+- **Two Spotify apps.** `SpotOn` is the browser login app (`VITE_SPOTIFY_CLIENT_ID`, redirect URIs). `SpotOn-Server` holds the server client-credentials pair (`SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET`). Rotate the secret on `SpotOn-Server`, then set the pair together everywhere.
+- **Vercel env changes need a new deployment** before they take effect.
+
+## Key rotation log
+
+| Date | What | Where updated |
+|---|---|---|
+| 2026-11-01 | Gemini (old key exposed in a chat), Tavily (new key with a 1,000-credit monthly cap and 80% email alert), Genius token, Spotify `SpotOn-Server` secret, new Upstash database + token | `.env`, Secret Manager (one active version each), Vercel (all 7 server vars) |
+
+Old Gemini and Tavily keys still exist and must be deleted by hand once production is confirmed on the new ones.
+
 ## Drills
 
 | Drill | How | Expect |
