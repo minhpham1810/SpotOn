@@ -198,3 +198,14 @@ Findings below are retained from the last completed review; the current document
 
 No unresolved findings.
 <!-- gstack:office-hours:concerns:end -->
+
+## Evidence log
+
+### Stage 1: portable container (2026-11-01, branch `ops/llm-provider`, uncommitted at time of writing)
+Environment: macOS arm64, Colima VM (2 vCPU / 4 GB), Docker 29.5.2, Compose 5.6.1, Node 24.20.0.
+- `server/index.ts` Node adapter runs the unchanged `api/research-song.ts` handler; 6 vitest cases (healthz, incremental SSE delivery, SPA fallback, asset caching, 404, encoded path traversal → 400).
+- Image: multi-stage, runtime holds only `dist/` (1.83 MB) + bundled server (176 kB) on `node:24-alpine`; `docker image ls` reports 242 MB, almost all base image.
+- `docker inspect`: `User=node` (uid 1000), `ReadonlyRootfs=true`; writes to `/app` and `/tmp` fail as expected. Compose healthcheck reports `healthy`.
+- End-to-end through the container with a local Redis behind serverless-redis-http: fresh report 4.3 s (2 `step` events + `report`, Gemini flash-lite, tools without keys degraded gracefully); repeat request served from cache in < 0.1 s; key stored with TTL 2,592,000 s.
+- `docker compose stop app` took 0.1 s (SIGTERM handled; no 10 s kill timeout).
+- Spotify redirect now `${location.origin}/callback`; removed the never-read `VITE_SPOTIFY_REDIRECT_URI`.
