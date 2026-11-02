@@ -73,6 +73,7 @@ locals {
   alerts = {
     limiter_down = {
       name      = "SpotOn: rate limiter cannot reach Redis"
+      severity  = "CRITICAL" # every fresh report fails
       doc       = "Fresh reports are being refused with 503. Check the Upstash database (free databases are deleted after 14 days idle) and UPSTASH_* settings. Runbook: docs/ops/runbook.md"
       filter    = "metric.type=\"logging.googleapis.com/user/spoton/report_requests\" AND metric.label.source=\"limiter-down\""
       threshold = 0
@@ -80,6 +81,7 @@ locals {
     }
     rate_limited_spike = {
       name      = "SpotOn: rate-limit spike (possible abuse)"
+      severity  = "WARNING" # spend is still capped
       doc       = "More than 50 requests were refused by the rate limiter in 10 minutes. Spend is still capped; check logs for the pattern and consider scripts/demo-down.sh."
       filter    = "metric.type=\"logging.googleapis.com/user/spoton/report_requests\" AND metric.label.source=\"limited\""
       threshold = 50
@@ -91,6 +93,7 @@ locals {
 resource "google_monitoring_alert_policy" "reports" {
   for_each     = var.alerts_enabled ? local.alerts : {}
   display_name = each.value.name
+  severity     = each.value.severity
   combiner     = "OR"
 
   conditions {
@@ -130,6 +133,7 @@ resource "google_logging_metric" "server_errors" {
 resource "google_monitoring_alert_policy" "server_errors" {
   count        = var.alerts_enabled ? 1 : 0
   display_name = "SpotOn: server errors"
+  severity     = "ERROR"
   combiner     = "OR"
 
   conditions {
