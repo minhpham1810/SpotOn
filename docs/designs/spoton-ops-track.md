@@ -259,3 +259,8 @@ Full write-up with conditions: `loadtest/README.md` (mock LLM, app at 1 vCPU / 5
 - Manual rollback drill: `update-traffic --to-revisions spoton-00004=100` took 4 s and served the old build; `--to-latest` took 6 s and served the new one (told apart by `/health` returning `ok` only on the new image).
 - Torn down with `terraform apply -var service_enabled=false` (2 destroyed); no Cloud Run services remain; drift check clean; old URL 404.
 - Still unverified: the CI deploy job's automatic rollback (needs a deliberately failing deploy) and receipt of the alert email.
+
+### Automatic rollback drill (2026-11-02)
+- Deploy/smoke/rollback logic moved from the workflow into `scripts/cloud-run-deploy.sh` (CI and the drill run the same code). Smoke test now checks the `/health` body (an image without the route answers 200 via the SPA fallback); "previous" is the revision actually serving.
+- `scripts/rollback-drill.sh` deploys a stub that answers 200 only on `/healthz` (so Cloud Run's startup probe passes and routes traffic) and 500 elsewhere. Run 1: broken revision 00002 refused, traffic back to 00001 within 19 s, `/health` ok; the clean-up redeploy then failed with `409 ABORTED` (Cloud Run still applying the rollback's traffic change). Fix: wait for Ready=True and retry changes. Run 2: broken 00005 refused after 18 s, traffic back to 00004, clean-up deployed 00006 at 100%, `DRILL PASSED`, exit 0. gcloud splits `--args` on commas, hence the `^@^` delimiter.
+- Added a manual "Rollback drill" workflow and a shared `cloud-run-deploy` concurrency group. Service torn down afterwards (2 destroyed, none left, drift clean).

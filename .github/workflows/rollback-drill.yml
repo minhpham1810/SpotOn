@@ -1,0 +1,43 @@
+name: Rollback drill
+
+# Manual only, while the demo service is up (scripts/demo-up.sh). Deploys a release that passes
+# Cloud Run's startup probe but fails the public smoke test, through the same
+# scripts/cloud-run-deploy.sh the Container workflow uses, and checks traffic returns to the
+# previous revision. Must run from master: the GCP trust only accepts refs/heads/master.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cloud-run-deploy
+  cancel-in-progress: false
+
+jobs:
+  drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      REGION: ${{ vars.GCP_REGION }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Run the drill against the image currently serving
+        run: |
+          IMAGE=$(gcloud run services describe spoton --project "$PROJECT" --region "$REGION" \
+            --format='value(spec.template.spec.containers[0].image)') || {
+            echo "::error::No Cloud Run service. Start one with scripts/demo-up.sh first."; exit 1; }
+          export IMAGE
+          scripts/rollback-drill.sh

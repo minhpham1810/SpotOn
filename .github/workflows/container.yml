@@ -123,6 +123,10 @@ jobs:
     needs: publish
     if: vars.GCP_PROJECT_ID != ''
     runs-on: ubuntu-latest
+    # Never overlap with another deploy or the rollback drill: Cloud Run rejects concurrent changes.
+    concurrency:
+      group: cloud-run-deploy
+      cancel-in-progress: false
     permissions:
       contents: read
       id-token: write
@@ -138,28 +142,9 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - name: Roll out, smoke test, roll back on failure
-        run: |
-          # The service only exists during demos (scripts/demo-up.sh); otherwise the image just waits in the registry.
-          if ! url=$(gcloud run services describe spoton --project "$PROJECT" --region "$REGION" --format='value(status.url)' 2>/dev/null); then
-            echo "::notice::Cloud Run service is down (demo-only); image pushed, nothing to deploy."
-            exit 0
-          fi
-          previous=$(gcloud run services describe spoton --project "$PROJECT" --region "$REGION" --format='value(status.latestReadyRevisionName)')
-          echo "Current revision: $previous"
-
-          gcloud run services update spoton --project "$PROJECT" --region "$REGION" --image "$IMAGE" --quiet
-          # After a past rollback, traffic is pinned to an old revision; without this the smoke test would test the old one.
-          gcloud run services update-traffic spoton --project "$PROJECT" --region "$REGION" --to-latest --quiet
-
-          ok=true
-          [ "$(curl -s -o /dev/null -w '%{http_code}' "$url/health")" = 200 ] || ok=false
-          [ "$(curl -s -o /dev/null -w '%{http_code}' "$url/")" = 200 ] || ok=false
-          [ "$(curl -s -o /dev/null -w '%{http_code}' "$url/api/research-song")" = 400 ] || ok=false
-
-          if [ "$ok" != true ]; then
-            echo "::error::Smoke test failed; sending all traffic back to $previous"
-            gcloud run services update-traffic spoton --project "$PROJECT" --region "$REGION" --to-revisions "$previous=100" --quiet
-            exit 1
-          fi
-          echo "Deployed $IMAGE to $url"
+        run: scripts/cloud-run-deploy.sh
