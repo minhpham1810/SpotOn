@@ -70,7 +70,7 @@ Return to normal with `--to-latest`.
 
 **Logs**: `gcloud run services logs read spoton --region us-east1 --limit 50`. The server writes one JSON line per request (method, path, status, latency, `reportSource` = cache / fresh / limited / limiter-down; never the query string or client IP); `/healthz` is not logged.
 
-**Metrics and alerts** (`infra/terraform/observability.tf`): log-based metrics `spoton/report_requests` (by source), `spoton/fresh_report_latency` (distribution), `spoton/server_errors`. Email alerts: any `limiter-down` in 5 min (Redis/Upstash unreachable, so fresh reports are 503), more than 50 `limited` in 10 min (abuse), more than 5 ERROR lines in 5 min. Free until 2027-09-01, then $0.35/month per alert; set `alerts_enabled = false` to drop them.
+**Metrics and alerts** (`infra/terraform/observability.tf`): log-based metrics `spoton/report_requests` (by source), `spoton/fresh_report_latency` (distribution), `spoton/server_errors`. Email alerts: any `limiter-down` in 5 min (Redis/Upstash unreachable, so fresh reports are 503), more than 50 `limited` in 10 min (abuse), more than 5 ERROR lines in 5 min. Free until 2027-09-01, then $0.35/month per alert; set `alerts_enabled = false` to drop them. Measured on 2026-11-02: the Redis-outage alert emailed about 3.5 minutes after the first failure and sent a recovery email about 6 minutes later. Severities: limiter-down CRITICAL, server errors ERROR, rate-limit spike WARNING.
 
 **Full teardown**: `scripts/gcp-teardown.sh` (destroys everything, then lists leftovers; exits non-zero if any). Last resort: `gcloud projects delete <project-id>`.
 
