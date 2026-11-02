@@ -1,0 +1,38 @@
+# Local stack: the app plus a real Redis behind Upstash's HTTP protocol,
+# so the unchanged @upstash/redis client works without an Upstash account.
+#   docker compose up --build    then open http://127.0.0.1:8080
+services:
+  app:
+    build:
+      context: .
+      args:
+        VITE_SPOTIFY_CLIENT_ID: ${VITE_SPOTIFY_CLIENT_ID:-}
+    ports:
+      - "127.0.0.1:8080:8080" # localhost only, not your whole network
+    env_file:
+      - path: .env # LLM, Tavily, Genius, Spotify server keys; injected at runtime, never baked in
+        required: false
+    environment:
+      # Always use the local cache, even if .env points at a real Upstash database.
+      UPSTASH_REDIS_REST_URL: http://redis-http
+      UPSTASH_REDIS_REST_TOKEN: local-dev-token
+    read_only: true
+    depends_on:
+      - redis-http
+
+  redis-http:
+    image: hiett/serverless-redis-http:0.0.10
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: local-dev-token
+      SRH_CONNECTION_STRING: redis://redis:6379
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7.4-alpine
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:

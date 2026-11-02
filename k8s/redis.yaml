@@ -1,0 +1,86 @@
+# Local cache: Redis plus serverless-redis-http, so the app's unchanged Upstash
+# client works inside the cluster. Ephemeral on purpose: losing the cache is harmless.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: spoton
+  labels: { app: redis }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: redis }
+  template:
+    metadata:
+      labels: { app: redis }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.4-alpine
+          args: ["--save", "", "--appendonly", "no"] # no persistence: it's a cache
+          ports:
+            - containerPort: 6379
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits: { cpu: 250m, memory: 128Mi }
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: spoton
+spec:
+  selector: { app: redis }
+  ports:
+    - port: 6379
+      targetPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-http
+  namespace: spoton
+  labels: { app: redis-http }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: redis-http }
+  template:
+    metadata:
+      labels: { app: redis-http }
+    spec:
+      containers:
+        - name: srh
+          image: hiett/serverless-redis-http:0.0.10
+          env:
+            - name: SRH_MODE
+              value: env
+            # SRH is Elixir: the BEAM sizes its port table from `ulimit -n`, which is ~1.07 billion
+            # under kind's containerd (Docker: 1024). That OOMKilled it at a 256Mi limit; cap it.
+            - name: ERL_MAX_PORTS
+              value: "65536"
+            - name: SRH_CONNECTION_STRING
+              value: redis://redis:6379
+            - name: SRH_TOKEN
+              valueFrom:
+                secretKeyRef: { name: spoton-secrets, key: UPSTASH_REDIS_REST_TOKEN }
+          ports:
+            - containerPort: 80
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 250m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-http
+  namespace: spoton
+spec:
+  selector: { app: redis-http }
+  ports:
+    - port: 80
+      targetPort: 80

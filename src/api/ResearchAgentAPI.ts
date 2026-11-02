@@ -13,6 +13,9 @@ export interface ResearchStepEvent {
   status: string;
 }
 
+// Rate limit or budget exhausted: the message is written for the user, so show it as-is.
+export class ResearchUnavailableError extends Error {}
+
 interface ParsedSseEvent {
   event: string;
   data: string;
@@ -42,6 +45,10 @@ const ResearchAgentAPI = {
     if (track.album) params.set('album', track.album);
 
     const response = await fetch(`/api/research-song?${params.toString()}`, { signal });
+    if (response.status === 429 || response.status === 503) {
+      const body = await response.json().catch(() => null);
+      throw new ResearchUnavailableError(body?.error ?? 'New song reports are temporarily unavailable.');
+    }
     if (!response.ok || !response.body) {
       throw new Error(`Research request failed: ${response.status}`);
     }

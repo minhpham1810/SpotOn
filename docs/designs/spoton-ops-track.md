@@ -198,3 +198,52 @@ Findings below are retained from the last completed review; the current document
 
 No unresolved findings.
 <!-- gstack:office-hours:concerns:end -->
+
+## Evidence log
+
+### Stage 1: portable container (2026-11-01, branch `ops/llm-provider`, uncommitted at time of writing)
+Environment: macOS arm64, Colima VM (2 vCPU / 4 GB), Docker 29.5.2, Compose 5.6.1, Node 24.20.0.
+- `server/index.ts` Node adapter runs the unchanged `api/research-song.ts` handler; 6 vitest cases (healthz, incremental SSE delivery, SPA fallback, asset caching, 404, encoded path traversal → 400).
+- Image: multi-stage, runtime holds only `dist/` (1.83 MB) + bundled server (176 kB) on `node:24-alpine`; `docker image ls` reports 242 MB, almost all base image.
+- `docker inspect`: `User=node` (uid 1000), `ReadonlyRootfs=true`; writes to `/app` and `/tmp` fail as expected. Compose healthcheck reports `healthy`.
+- End-to-end through the container with a local Redis behind serverless-redis-http: fresh report 4.3 s (2 `step` events + `report`, Gemini flash-lite, tools without keys degraded gracefully); repeat request served from cache in < 0.1 s; key stored with TTL 2,592,000 s.
+- `docker compose stop app` took 0.1 s (SIGTERM handled; no 10 s kill timeout).
+- Spotify redirect now `${location.origin}/callback`; removed the never-read `VITE_SPOTIFY_REDIRECT_URI`.
+
+### Stage 2: abuse and cost protection (2026-11-01)
+- `api/_lib/rateLimit.ts`: fixed-window counters in the existing Redis. Defaults 5 fresh reports per IP per hour and 15 per day globally (15 × ≤2 Tavily credits × 31 days = 930 < 1,000 free). Cached reports bypass the limiter. Blocked callers don't consume the global budget.
+- Handler order: validate (trackId `^[A-Za-z0-9_-]{1,64}$`, text ≤ 200 chars) → cache → budget → agent. Over limit = HTTP 429 + `Retry-After`; limiter error = 503 (fail closed). UI shows the server's message.
+- `server/index.ts` overwrites `x-real-ip` with the socket address so clients can't pick their own bucket. Cloud Run's correct `X-Forwarded-For` hop is a Stage 4 task.
+- Tests: 143 pass (13 new across limiter, handler, server, client).
+- Container drill (LLM pointed at a dead address so no quota was spent): requests 1–5 → 200, 6–7 → 429 with `Retry-After: 2350`; cached report still 200 while limited; bad trackId → 400; global counter stayed at 5 while the IP counter reached 8. With the Redis proxy stopped: fresh request → 503 `Retry-After: 60`, `/healthz` still 200.
+- Observed: behind Docker port mapping all local clients share one IP (`::ffff:172.18.0.1`, the bridge gateway).
+
+### Stage 3: CI image pipeline (2026-11-01)
+- `.github/workflows/container.yml`: `verify` job (build with GHA cache, `scripts/smoke-test.sh`, Trivy) holds only `contents: read`; `publish` job (master pushes only) is the only one with `packages: write`, pushes `ghcr.io/minhpham1810/spoton:sha-<full sha>` with provenance (mode=max) and SBOM. Weekly scheduled rescan.
+- Supply chain: all actions in both workflows pinned to full commit SHAs (trivy-action tag hijack, CVE-2026-33634, March 2026). Trivy runs as `aquasec/trivy:0.76.1@sha256:790fd66d…` against a `docker save` tarball: no token, no Docker socket. Base image pinned to the `node:24-alpine` multi-arch index digest. Dependabot for actions + docker.
+- Smoke test proven both ways locally: passes on the real image; fails on a `USER root` variant ("container runs as root") and on a `PORT=9000` variant ("/healthz"; the in-container HEALTHCHECK still reported healthy, which is why the test also checks from the host).
+- Trivy first scan: 0 CRITICAL, 6 HIGH, all in npm's bundled `brace-expansion` 5.0.9 and `undici` 6.28.0 under `/usr/local/lib/node_modules/npm`. Runtime doesn't use npm, so it is deleted in the runtime stage; rescan: HIGH/CRITICAL gate exit 0. Image size unchanged at 242 MB (deletion is a whiteout layer; the base layer still holds the bytes).
+- Lint: actionlint 1.7.12 clean (includes shellcheck of inline steps); shellcheck clean on `scripts/smoke-test.sh`.
+- Local gotcha: Colima only shares `$HOME` with its VM; bind-mounting a file from `/private/tmp` silently produced an empty directory inside the container.
+- GitHub, PR #2 (run 41352251207, ubuntu-latest amd64): "Build, smoke test, scan" passed in 2m22s; smoke test `PASS: healthy, uid 1000, read-only rootfs, routes ok, graceful stop`; Trivy 0 HIGH/CRITICAL on alpine 3.24.3; "Publish to GHCR" skipped on the PR as designed. Lint, Test, Typecheck & Build also green.
+- Branch incident: an out-of-session fast-forward of local `master` (pushed to GitHub, deployed to Vercel production as `3c16d01`) meant Stage 1–3 commits first landed on `master`; moved to `ops/llm-provider` and `master` reset to `origin/master` before the PR. Production checked afterward: one fresh report streamed successfully.
+
+### Stage 4: Cloud Run foundation (2026-11-01, project `spoton-ops-7oco1c`, us-east1)
+- Prices confirmed from Google's pricing pages: Cloud Run request-based $0.000024/vCPU-s and $0.0000025/GiB-s beyond the free tier; Artifact Registry $0.000137/GB-hour (~$0.10/GB-month) beyond 0.5 GB; Secret Manager ~$0.06/version-month beyond 6, and **disabled versions still bill** (only destroyed are free).
+- Original billing account was closed; user opened a new one. Separate project created; AI Studio `gen-lang-client-*` projects deliberately untouched.
+- `terraform apply`: 28 resources (8 APIs, AR repo + cleanup policy, 2 SAs, 3 SA/AR IAM bindings, project `run.developer` for deployer, WIF pool + provider, 5 secret containers + 5 accessor bindings, $5 budget). First attempt needed `cloudresourcemanager` enabled out of band; 2 creates then hit 403 from API propagation and succeeded on re-apply a minute later. Follow-up `plan -detailed-exitcode` = 0 (no drift).
+- Verified live: provider condition `assertion.repository_id == "944923077" && assertion.ref == "refs/heads/master"`; budget "SpotOn monthly" $5 on the billing account. No Cloud Run service exists (`service_enabled = false`).
+- GitHub repo variables set from Terraform outputs (GCP_PROJECT_ID, GCP_REGION, GCP_WIF_PROVIDER, GCP_DEPLOYER_SA). Found stale 2025 repo secrets including a live `DOCKERHUB_TOKEN` and old `GEMINI_API_KEY`; flagged for revocation.
+- Key rotation (2026-11-01), driven in gstack's headed browser after the user signed in: new Gemini key in the AI Studio "SpotOn" project (differs from the leaked key; models.list 200); Tavily key with a 1,000-credit monthly usage cap + 80% alert (search 200); Genius token (search 200); Spotify `SpotOn-Server` secret rotated (old secret → token endpoint 400, new → 200; first rotate attempt silently didn't apply); Upstash database found DELETED by the 14-day free-tier inactivity rule, replaced by `spoton-cache` (us-east-1, Free, $0), PING → PONG. Secret values were captured to 0600 files and never printed; all written to `.env`, loaded into Secret Manager (1 active version each; the dummy test version destroyed), and set in Vercel (7 vars, each confirmed "Updated").
+- Blocked by the auto-mode safety classifier, correctly left to the user: creating a Vercel API token for the agent, merging PR #2. A Vercel dashboard "Redeploy" of production did not start a deployment after two attempts; one attempt's dialog targeted the PR-branch preview and was cancelled.
+
+### Stage 6: local Kubernetes on kind (2026-11-01)
+Full write-up: `docs/ops/kubernetes.md`. Highlights: SRH OOMKilled under kind (BEAM port table sized from nofile = 1,073,741,816; fixed with ERL_MAX_PORTS, peak 68 MiB); port-forward pins one pod (65/75 failed) vs in-cluster Service 99/100; preStop sleep 5 took pod-kill drill to 100/100 twice; bad image contained by maxUnavailable 0 (2/2 ready, rollout undo); 16Mi limit → OOMKilled/CrashLoopBackOff, old pods unaffected; app memory peak 22 MiB, so the 96Mi request is oversized pending Stage 7.
+
+### Stage 7: load tests (2026-11-01)
+Full write-up with conditions: `loadtest/README.md` (mock LLM, app at 1 vCPU / 512 MiB, k6 v2.3.0). Cached: 1,657 req/s, p95 40 ms, one Redis GET per request → found that cache-hit floods would spend Upstash's free monthly quota in ~5 min; added a per-instance memory cache → 18,172 req/s, p95 4.5 ms, 1 Redis GET for 545,622 requests. Fresh: 200 concurrent SSE streams on 1 vCPU, 0 errors, p95 3.95 s vs 3 s mock delay, 68 MiB peak → Cloud Run concurrency 20 → 80, memory 512 → 256 Mi; kind request 96 → 64 Mi.
+
+### Stage 5: observability (2026-11-01, applied; alert firing not yet exercised because no service is deployed)
+- Server writes one structured JSON line per request (Cloud Run `severity`/`httpRequest` fields + `reportSource`, `durationMs`; no query string, no IP; `/healthz` skipped). Handler tags responses with `X-Report-Source`. Verified in the container: fresh `3156ms reportSource=fresh`, repeat `1ms cache`, `429 ... limited`.
+- Pricing confirmed: user-defined log-based metrics within the 150 MiB free metric ingest; alerting policies free until 2027-09-01, then $0.35/month per metric reference.
+- Terraform applied: 3 log-based metrics, email channel, 3 alert policies (limiter-down, rate-limit spike, server errors). First apply created metrics but not policies (new metric types not yet registered); re-apply succeeded. Drift check clean.

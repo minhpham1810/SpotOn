@@ -1,0 +1,18 @@
+# Secrets never enter the build context
+.env
+.env.*
+
+# Rebuilt inside the image
+node_modules
+dist
+dist-server
+
+# Not needed to build
+.git
+.github
+.vercel
+coverage
+bench
+docs
+image
+*.md

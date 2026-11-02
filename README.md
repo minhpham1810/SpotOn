@@ -70,7 +70,7 @@ No more generic recommendations. Just music that feels **SpotOn**.
    cp .env.example .env
    ```
    - `VITE_SPOTIFY_CLIENT_ID` – your Spotify app's client ID
-   - `VITE_SPOTIFY_REDIRECT_URI` – the OAuth redirect URI registered with your Spotify app (e.g. `http://127.0.0.1:3000`)
+   - The OAuth redirect is always `<the origin you open the app on>/callback` (e.g. `http://127.0.0.1:3000/callback` for `npm run dev`, `http://127.0.0.1:8080/callback` for Docker). Register each one in your Spotify app's dashboard.
 
 3. **To test the deep research agent locally**, use `vercel dev` instead of `npm run dev`. This runs both the Vite development server and the Vercel Edge Functions (where the research agent lives) alongside each other:
    ```
@@ -83,7 +83,27 @@ No more generic recommendations. Just music that feels **SpotOn**.
    npm run dev
    ```
 
-> **Note for deployments (e.g. Vercel):** this project was migrated from Create React App to Vite, so env vars must use the `VITE_` prefix instead of the old `REACT_APP_` prefix. If your hosting dashboard still has `REACT_APP_SPOTIFY_CLIENT_ID` or `REACT_APP_SPOTIFY_REDIRECT_URI` configured, you must manually rename them to `VITE_SPOTIFY_CLIENT_ID` and `VITE_SPOTIFY_REDIRECT_URI` respectively in the dashboard — this cannot be changed from the codebase.
+### Running the full app in Docker (no Vercel, no Upstash account)
+
+The same research handler runs in a plain Node server (`server/index.ts`) that also serves the built frontend and `GET /healthz`. `compose.yaml` adds a local Redis behind Upstash's HTTP protocol, so caching works offline.
+
+```
+docker compose up --build        # http://127.0.0.1:8080
+docker compose logs -f app
+docker compose down              # add -v to also wipe the local cache
+```
+
+Server keys come from `.env` at runtime and are never baked into the image; any missing tool key just degrades that tool. The image runs as a non-root user on a read-only filesystem. Without Docker: `npm run build && npm run build:server && npm start`.
+
+### Container CI
+
+`.github/workflows/container.yml` builds the image on every PR and push to `master`, boots it with `scripts/smoke-test.sh` (health check, non-root user, read-only filesystem, routes, graceful stop), and fails on fixable HIGH/CRITICAL vulnerabilities found by Trivy. It also rescans weekly. Pushes to `master` then publish `ghcr.io/minhpham1810/spoton:sha-<commit>` with provenance and an SBOM, using only the workflow's `GITHUB_TOKEN`. Set the public Spotify client ID as a repository variable: `gh variable set VITE_SPOTIFY_CLIENT_ID`. Run the same smoke test locally with `docker build -t spoton:local . && scripts/smoke-test.sh spoton:local`.
+
+### Rate limits
+
+Fresh reports spend LLM and Tavily quota, so they are limited (cached reports are not): 5 per client IP per hour and 15 per day in total by default (`RESEARCH_LIMIT_PER_IP_HOUR`, `RESEARCH_LIMIT_GLOBAL_PER_DAY`). 15/day keeps the worst case inside Tavily's 1,000 free monthly credits. Over the limit the API returns `429` with `Retry-After`; if Redis is unreachable it refuses fresh runs with `503` rather than spending quota without counting.
+
+> **Note for deployments (e.g. Vercel):** this project was migrated from Create React App to Vite, so env vars must use the `VITE_` prefix instead of the old `REACT_APP_` prefix. If your hosting dashboard still has `REACT_APP_SPOTIFY_CLIENT_ID` configured, rename it to `VITE_SPOTIFY_CLIENT_ID` in the dashboard — this cannot be changed from the codebase.
 
 ### Testing & linting
 

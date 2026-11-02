@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from './contexts/ToastContext';
 import SpotifyAPI from './api/SpotifyAPI';
-import ResearchAgentAPI, { ResearchStepEvent } from './api/ResearchAgentAPI';
+import ResearchAgentAPI, { ResearchStepEvent, ResearchUnavailableError } from './api/ResearchAgentAPI';
 import { TrackDetails } from './types/spotify';
 import { SongInfo } from './types/song-info';
 import { extractCoverAccent, type CoverAccent } from './lib/coverAccentColor';
@@ -112,7 +112,9 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
             } catch (error) {
                 if (controller.signal.aborted) return;
                 console.error('Error generating song info:', error);
-                setResearchError('Unable to load additional song information.');
+                setResearchError(
+                    error instanceof ResearchUnavailableError ? error.message : 'Unable to load additional song information.'
+                );
                 showToast('Unable to load song details at this time', 'error');
             } finally {
                 if (!controller.signal.aborted) {

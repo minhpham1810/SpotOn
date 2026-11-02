@@ -42,10 +42,8 @@ async function findSnippetUrl(artist: string, name: string): Promise<string | nu
 
 const SpotifyAPI = {
   clientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined,
-  redirectUri:
-    window.location.hostname === "127.0.0.1"
-      ? "https://127.0.0.1:3000/callback"
-      : "https://spot-on-six.vercel.app/callback",
+  // Same build works on any host (Vercel, Docker, Cloud Run, kind); each origin's /callback must be registered in the Spotify dashboard.
+  redirectUri: `${window.location.origin}/callback`,
   markets: ["US", "GB", "ES", "FR", "DE"],
 
   accessToken: null as string | null,

@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spoton
+  namespace: spoton
+  labels: { app: spoton }
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0 # never drop below 2 ready pods during a rollout
+      maxSurge: 1
+  selector:
+    matchLabels: { app: spoton }
+  template:
+    metadata:
+      labels: { app: spoton }
+    spec:
+      # The server drains on SIGTERM; open SSE reports get this long before SIGKILL.
+      terminationGracePeriodSeconds: 15
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: app
+          image: spoton:local
+          imagePullPolicy: IfNotPresent # kind gets images via `kind load`, never a registry
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef: { name: spoton-config }
+            - secretRef: { name: spoton-secrets }
+          resources:
+            requests: { cpu: 100m, memory: 64Mi } # measured peak 22-68 MiB (docs/ops/kubernetes.md, loadtest/)
+            limits: { cpu: 500m, memory: 256Mi }
+          # /healthz never touches Redis: a cache outage must not restart or unroute healthy pods.
+          startupProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 2
+            failureThreshold: 15
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 20
+            failureThreshold: 3
+          # Endpoint removal and SIGTERM happen in parallel. Without this pause, the server stopped
+          # accepting while kube-proxy still routed to it: 1 of 100 requests failed in the pod-kill drill.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spoton
+  namespace: spoton
+spec:
+  selector: { app: spoton }
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

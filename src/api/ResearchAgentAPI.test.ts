@@ -1,5 +1,5 @@
 import { test, expect, vi, beforeEach } from 'vitest';
-import ResearchAgentAPI from './ResearchAgentAPI';
+import ResearchAgentAPI, { ResearchUnavailableError } from './ResearchAgentAPI';
 
 function streamResponse(chunks: string[]): Response {
   const encoder = new TextEncoder();
@@ -97,4 +97,18 @@ test('researchSong rejects when the signal is aborted', async () => {
   controller.abort();
 
   await expect(promise).rejects.toThrow('The operation was aborted');
+});
+
+test('researchSong surfaces the server message when rate limited', async () => {
+  (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+    new Response(JSON.stringify({ error: 'Try again in about 25 minutes.' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  );
+
+  const attempt = ResearchAgentAPI.researchSong({ id: '1', name: 'Song', artist: 'Artist' }, vi.fn());
+
+  await expect(attempt).rejects.toBeInstanceOf(ResearchUnavailableError);
+  await expect(attempt).rejects.toThrow('Try again in about 25 minutes.');
 });

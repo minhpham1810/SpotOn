@@ -25,7 +25,8 @@ vi.mock('./api/SpotifyAPI', () => ({
 }));
 
 const researchSongMock = vi.fn();
-vi.mock('./api/ResearchAgentAPI', () => ({
+vi.mock('./api/ResearchAgentAPI', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./api/ResearchAgentAPI')>()),
   default: { researchSong: (...args: unknown[]) => researchSongMock(...args) },
 }));
 
