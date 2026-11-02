@@ -13,6 +13,8 @@ services:
       # Load tests measure the service, not the limiter.
       RESEARCH_LIMIT_PER_IP_HOUR: "1000000"
       RESEARCH_LIMIT_GLOBAL_PER_DAY: "1000000"
+      # Results in README.md were measured without per-request log lines.
+      LOG_REQUESTS: "0"
     cpus: 1
     mem_limit: 512m
     depends_on:

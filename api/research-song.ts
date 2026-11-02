@@ -83,9 +83,11 @@ function jsonError(status: number, error: string, headers: Record<string, string
   });
 }
 
-function sseResponse(stream: ReadableStream): Response {
+// X-Report-Source tells logs and metrics how a request was answered: cache, fresh, limited, limiter-down.
+function sseResponse(stream: ReadableStream, source: 'cache' | 'fresh'): Response {
   return new Response(stream, {
     headers: {
+      'X-Report-Source': source,
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
@@ -126,7 +128,8 @@ export default async function handler(request: Request): Promise<Response> {
           controller.enqueue(new TextEncoder().encode(sseEvent('report', report)));
           controller.close();
         },
-      })
+      }),
+      'cache'
     );
   }
 
@@ -136,7 +139,10 @@ export default async function handler(request: Request): Promise<Response> {
     budget = await takeResearchBudget(clientIp(request));
   } catch (limitError) {
     console.error('takeResearchBudget failed, refusing the fresh run:', limitError);
-    return jsonError(503, 'New song reports are temporarily unavailable. Please try again shortly.', { 'Retry-After': '60' });
+    return jsonError(503, 'New song reports are temporarily unavailable. Please try again shortly.', {
+      'Retry-After': '60',
+      'X-Report-Source': 'limiter-down',
+    });
   }
   if (!budget.allowed) {
     const minutes = Math.ceil(budget.retryAfterSeconds / 60);
@@ -144,7 +150,7 @@ export default async function handler(request: Request): Promise<Response> {
       budget.reason === 'ip'
         ? `You've reached the limit for new song reports. Try again in about ${minutes} minutes.`
         : `SpotOn has used today's budget for new song reports. Try again in about ${Math.ceil(minutes / 60)} hours.`;
-    return jsonError(429, message, { 'Retry-After': String(budget.retryAfterSeconds) });
+    return jsonError(429, message, { 'Retry-After': String(budget.retryAfterSeconds), 'X-Report-Source': 'limited' });
   }
 
   const stream = new ReadableStream({
@@ -182,5 +188,5 @@ export default async function handler(request: Request): Promise<Response> {
     },
   });
 
-  return sseResponse(stream);
+  return sseResponse(stream, 'fresh');
 }

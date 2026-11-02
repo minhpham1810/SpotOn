@@ -242,3 +242,8 @@ Full write-up: `docs/ops/kubernetes.md`. Highlights: SRH OOMKilled under kind (B
 
 ### Stage 7: load tests (2026-11-01)
 Full write-up with conditions: `loadtest/README.md` (mock LLM, app at 1 vCPU / 512 MiB, k6 v2.3.0). Cached: 1,657 req/s, p95 40 ms, one Redis GET per request → found that cache-hit floods would spend Upstash's free monthly quota in ~5 min; added a per-instance memory cache → 18,172 req/s, p95 4.5 ms, 1 Redis GET for 545,622 requests. Fresh: 200 concurrent SSE streams on 1 vCPU, 0 errors, p95 3.95 s vs 3 s mock delay, 68 MiB peak → Cloud Run concurrency 20 → 80, memory 512 → 256 Mi; kind request 96 → 64 Mi.
+
+### Stage 5: observability (2026-11-01, applied; alert firing not yet exercised because no service is deployed)
+- Server writes one structured JSON line per request (Cloud Run `severity`/`httpRequest` fields + `reportSource`, `durationMs`; no query string, no IP; `/healthz` skipped). Handler tags responses with `X-Report-Source`. Verified in the container: fresh `3156ms reportSource=fresh`, repeat `1ms cache`, `429 ... limited`.
+- Pricing confirmed: user-defined log-based metrics within the 150 MiB free metric ingest; alerting policies free until 2027-09-01, then $0.35/month per metric reference.
+- Terraform applied: 3 log-based metrics, email channel, 3 alert policies (limiter-down, rate-limit spike, server errors). First apply created metrics but not policies (new metric types not yet registered); re-apply succeeded. Drift check clean.

@@ -205,3 +205,20 @@ test.each([
   expect(getCachedReportMock).not.toHaveBeenCalled();
   expect(takeResearchBudgetMock).not.toHaveBeenCalled();
 });
+
+test('X-Report-Source labels how each request was answered', async () => {
+  getCachedReportMock.mockResolvedValue(emptyReport);
+  expect((await handler(new Request(freshUrl))).headers.get('x-report-source')).toBe('cache');
+
+  getCachedReportMock.mockResolvedValue(null);
+  runResearchAgentMock.mockResolvedValue(emptyReport);
+  const fresh = await handler(new Request(freshUrl));
+  await readStreamText(fresh);
+  expect(fresh.headers.get('x-report-source')).toBe('fresh');
+
+  takeResearchBudgetMock.mockResolvedValue({ allowed: false, reason: 'global', retryAfterSeconds: 60 });
+  expect((await handler(new Request(freshUrl))).headers.get('x-report-source')).toBe('limited');
+
+  takeResearchBudgetMock.mockRejectedValue(new Error('down'));
+  expect((await handler(new Request(freshUrl))).headers.get('x-report-source')).toBe('limiter-down');
+});

@@ -13,6 +13,7 @@ let distDir: string;
 let server: Server;
 let baseUrl: string;
 let releaseSecondEvent: () => void;
+const logLines: string[] = [];
 const apiHandler = vi.fn(async (request: Request) => {
   const stream = new ReadableStream({
     async start(controller) {
@@ -31,7 +32,7 @@ beforeAll(async () => {
   await mkdir(join(distDir, 'assets'));
   await writeFile(join(distDir, 'index.html'), '<html>app</html>');
   await writeFile(join(distDir, 'assets', 'app-abc123.js'), 'console.log(1)');
-  server = createServer(createApp(distDir, apiHandler));
+  server = createServer(createApp(distDir, apiHandler, (line) => logLines.push(line)));
   await new Promise<void>((ready) => server.listen(0, '127.0.0.1', ready));
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
@@ -114,4 +115,31 @@ test('clientAddress takes the entry the trusted proxy appended, ignoring client-
   // Fewer entries than hops: fall back to the socket rather than guess.
   expect(clientAddress(req('203.0.113.7'), 2)).toBe('10.0.0.1');
   expect(clientAddress(req(undefined), 1)).toBe('10.0.0.1');
+});
+
+test('each request logs one structured JSON line without query string or client IP; /healthz is not logged', async () => {
+  logLines.length = 0;
+  await (await fetch(`${baseUrl}/healthz`)).text();
+  await (await fetch(`${baseUrl}/assets/missing.js?secret=1`)).text();
+  await new Promise((r) => setTimeout(r, 20));
+
+  expect(logLines).toHaveLength(1);
+  const entry = JSON.parse(logLines[0]);
+  expect(entry).toMatchObject({
+    severity: 'WARNING',
+    httpRequest: { requestMethod: 'GET', requestUrl: '/assets/missing.js', status: 404 },
+  });
+  expect(entry.httpRequest.latency).toMatch(/^\d+(\.\d+)?s$/);
+  expect(logLines[0]).not.toContain('secret');
+  expect(logLines[0]).not.toContain('127.0.0.1');
+});
+
+test('API log lines carry the report source set by the handler', async () => {
+  logLines.length = 0;
+  apiHandler.mockImplementationOnce(async () => new Response('x', { status: 429, headers: { 'X-Report-Source': 'limited' } }));
+  await (await fetch(`${baseUrl}/api/research-song?trackId=a&name=b&artist=c`)).text();
+  await new Promise((r) => setTimeout(r, 20));
+
+  const entry = JSON.parse(logLines[0]);
+  expect(entry).toMatchObject({ severity: 'WARNING', reportSource: 'limited', httpRequest: { status: 429 } });
 });

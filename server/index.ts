@@ -97,10 +97,30 @@ async function serveStatic(res: ServerResponse, distDir: string, pathname: strin
   res.end(body);
 }
 
-export function createApp(distDir: string, apiHandler: Handler = researchSong) {
+// One JSON line per request. Cloud Run turns stdout JSON into structured logs (severity,
+// httpRequest), which log-based metrics and alerts are built on. No query string, no client IP.
+export function requestLog(method: string, path: string, res: ServerResponse, startedMs: number) {
+  const status = res.statusCode;
+  const durationMs = Math.round(performance.now() - startedMs);
+  const source = res.getHeader('x-report-source');
+  return {
+    severity: status >= 500 ? 'ERROR' : status >= 400 ? 'WARNING' : 'INFO',
+    message: `${method} ${path} ${status} ${durationMs}ms`,
+    httpRequest: { requestMethod: method, requestUrl: path, status, latency: `${durationMs / 1000}s` },
+    ...(source ? { reportSource: String(source) } : {}),
+    ...(res.writableFinished ? {} : { clientAborted: true }),
+    durationMs,
+  };
+}
+
+export function createApp(distDir: string, apiHandler: Handler = researchSong, log = console.log) {
   const root = resolve(distDir);
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const { pathname } = new URL(req.url ?? '/', 'http://localhost');
+    if (pathname !== '/healthz' && process.env.LOG_REQUESTS !== '0') {
+      const started = performance.now();
+      res.on('close', () => log(JSON.stringify(requestLog(req.method ?? 'GET', pathname, res, started))));
+    }
     try {
       if (pathname === '/healthz') {
         res.writeHead(200, { 'Content-Type': 'text/plain' }).end('ok');

@@ -8,6 +8,8 @@ locals {
     "sts.googleapis.com",
     "billingbudgets.googleapis.com",
     "cloudresourcemanager.googleapis.com",
+    "monitoring.googleapis.com",
+    "logging.googleapis.com",
   ]
 
   # Values are added out of band (scripts/gcp-set-secrets.sh) so they never land in Terraform state.
