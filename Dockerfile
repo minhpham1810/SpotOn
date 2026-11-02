@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- build: needs dev dependencies (vite, tsc, rolldown) ----
-FROM node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85 AS build
+FROM node:26-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -13,7 +13,7 @@ RUN VITE_SPOTIFY_CLIENT_ID="$VITE_SPOTIFY_CLIENT_ID" npm run build && npm run bu
 
 # ---- runtime: no node_modules, no source ----
 # Base image pinned by digest (multi-arch index); Dependabot proposes updates.
-FROM node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
+FROM node:26-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94
 ENV NODE_ENV=production PORT=8080
 # The app only needs the node binary. npm and corepack ship their own dependencies,
 # which is where all of Trivy's HIGH findings were; remove them from the runtime.
