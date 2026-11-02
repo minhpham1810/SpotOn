@@ -247,3 +247,11 @@ Full write-up with conditions: `loadtest/README.md` (mock LLM, app at 1 vCPU / 5
 - Server writes one structured JSON line per request (Cloud Run `severity`/`httpRequest` fields + `reportSource`, `durationMs`; no query string, no IP; `/healthz` skipped). Handler tags responses with `X-Report-Source`. Verified in the container: fresh `3156ms reportSource=fresh`, repeat `1ms cache`, `429 ... limited`.
 - Pricing confirmed: user-defined log-based metrics within the 150 MiB free metric ingest; alerting policies free until 2027-09-01, then $0.35/month per metric reference.
 - Terraform applied: 3 log-based metrics, email channel, 3 alert policies (limiter-down, rate-limit spike, server errors). First apply created metrics but not policies (new metric types not yet registered); re-apply succeeded. Drift check clean.
+
+### Stage 4/5 live (2026-11-01/02, after merging PR #2 as 264ed28)
+- Vercel production 264ed28: fresh report 11.5 s using spotify_search, genius_lookup, web_search with the rotated keys; repeat 0.2 s from cache; new Upstash DB holds cache + limiter keys.
+- First keyless CI auth: Container run 41374503845 exchanged GitHub OIDC via the WIF provider and pushed `sha-264ed28…` (index sha256:7735035f…) to Artifact Registry; deploy job found no service and skipped as designed.
+- Cloud Run up via Terraform (2 resources, 16 s): HTTPS valid cert, HTTP/2; `/`, SPA route, 404 asset, API 400 all correct. **`/healthz` returns 404 externally** (reserved by Cloud Run's front end) → added `/health` for external checks.
+- Forged X-Forwarded-For drill (per-IP limit temporarily 1): both requests with different forged XFF → 429; Upstash held 1 per-IP counter (real IP, shared with Vercel) and 0 for 203.0.113.x.
+- Redis-outage drill (Upstash URL pointed at a nonexistent host): 3 fresh requests → 503 `limiter-down`, Retry-After 60; Cloud Logging entries severity ERROR / status 503; log-based metric showed count=3 about 90 s later; 3 alert policies enabled with the email channel (email receipt to be confirmed by the user). Each 503 took ~8.6 s = 2 commands × the client's default 5 retries (50·(1+e+e²+e³+e⁴) ms ≈ 4.3 s) → set 1 retry / 100 ms.
+- Drill config reverted with `terraform apply` (drift from `gcloud run services update` removed); cached report served by Cloud Run in 0.33 s.

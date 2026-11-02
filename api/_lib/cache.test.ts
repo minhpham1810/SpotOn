@@ -2,10 +2,14 @@ import { test, expect, vi, beforeEach } from 'vitest';
 
 const getMock = vi.fn();
 const setMock = vi.fn();
+const { fromEnvMock } = vi.hoisted(() => ({ fromEnvMock: vi.fn() }));
 
 vi.mock('@upstash/redis', () => ({
   Redis: {
-    fromEnv: () => ({ get: getMock, set: setMock }),
+    fromEnv: (...args: unknown[]) => {
+      fromEnvMock(...args);
+      return { get: getMock, set: setMock };
+    },
   },
 }));
 
@@ -102,4 +106,13 @@ test('a Redis miss is not remembered, so a later write is seen', async () => {
   expect(await getCachedReport('miss-track')).toBeNull();
   getMock.mockResolvedValueOnce(sampleReport);
   expect(await getCachedReport('miss-track')).toEqual(sampleReport);
+});
+
+test('the Redis client fails fast: one retry after 100 ms instead of the 5-retry default', async () => {
+  getMock.mockResolvedValueOnce(null);
+  await getCachedReport('fail-fast-track');
+
+  const options = fromEnvMock.mock.calls[fromEnvMock.mock.calls.length - 1]?.[0] as { retry: { retries: number; backoff: (n: number) => number } };
+  expect(options.retry.retries).toBe(1);
+  expect(options.retry.backoff(0)).toBe(100);
 });

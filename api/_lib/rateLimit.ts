@@ -1,4 +1,5 @@
-import { Redis } from '@upstash/redis';
+import type { Redis } from '@upstash/redis';
+import { redis as redisClient } from './cache';
 
 // Fresh reports spend LLM and Tavily quota; cached reports are free and never limited.
 // Defaults keep the worst case inside Tavily's 1,000 free credits/month:
@@ -18,7 +19,7 @@ async function hit(redis: Redis, key: string, windowSeconds: number): Promise<nu
 }
 
 export async function takeResearchBudget(clientIp: string, now = Date.now()): Promise<ResearchBudget> {
-  const redis = Redis.fromEnv();
+  const redis = redisClient();
   const nowSeconds = Math.floor(now / 1000);
   const hourWindow = Math.floor(nowSeconds / 3600);
   const dayWindow = Math.floor(nowSeconds / 86400);

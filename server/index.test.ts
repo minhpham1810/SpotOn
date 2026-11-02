@@ -143,3 +143,12 @@ test('API log lines carry the report source set by the handler', async () => {
   const entry = JSON.parse(logLines[0]);
   expect(entry).toMatchObject({ severity: 'WARNING', reportSource: 'limited', httpRequest: { status: 429 } });
 });
+
+test('/health is an alias for external checks (Cloud Run reserves /healthz) and is not logged', async () => {
+  logLines.length = 0;
+  const res = await fetch(`${baseUrl}/health`);
+  expect(res.status).toBe(200);
+  expect(await res.text()).toBe('ok');
+  await new Promise((r) => setTimeout(r, 20));
+  expect(logLines).toHaveLength(0);
+});

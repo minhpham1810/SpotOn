@@ -3,6 +3,13 @@ import type { SongInfo } from '../../src/types/song-info';
 
 const CACHE_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
+// The client's default (5 retries, e^n*50ms backoff) is ~4.3 s per command when Redis is down,
+// measured as 8.6 s per fresh request (cache read + limiter count) in the Cloud Run outage drill.
+// One quick retry rides out a blip; a real outage now fails in ~0.2 s.
+export function redis(): Redis {
+  return Redis.fromEnv({ retry: { retries: 1, backoff: () => 100 } });
+}
+
 // Hot reports are answered from this instance's memory, so a flood of cache hits doesn't become a
 // flood of billed Upstash commands. Measured: ~1,650 cached requests/s on 1 vCPU, which would spend
 // the 500k free monthly commands in ~5 minutes. Reports don't change, so a short TTL is safe.
@@ -25,14 +32,12 @@ export async function getCachedReport(trackId: string): Promise<SongInfo | null>
   if (hot && hot.expires > Date.now()) return hot.report;
   if (hot) memory.delete(trackId);
 
-  const redis = Redis.fromEnv();
-  const cached = await redis.get<SongInfo>(cacheKey(trackId));
+  const cached = await redis().get<SongInfo>(cacheKey(trackId));
   if (cached) remember(trackId, cached);
   return cached ?? null;
 }
 
 export async function setCachedReport(trackId: string, report: SongInfo): Promise<void> {
   remember(trackId, report);
-  const redis = Redis.fromEnv();
-  await redis.set(cacheKey(trackId), report, { ex: CACHE_TTL_SECONDS });
+  await redis().set(cacheKey(trackId), report, { ex: CACHE_TTL_SECONDS });
 }

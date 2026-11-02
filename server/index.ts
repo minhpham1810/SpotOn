@@ -117,12 +117,15 @@ export function createApp(distDir: string, apiHandler: Handler = researchSong, l
   const root = resolve(distDir);
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const { pathname } = new URL(req.url ?? '/', 'http://localhost');
-    if (pathname !== '/healthz' && process.env.LOG_REQUESTS !== '0') {
+    // Cloud Run's front end reserves /healthz on run.app URLs (it returns its own 404), so external
+    // checks use /health; container-internal probes keep /healthz.
+    const isHealth = pathname === '/healthz' || pathname === '/health';
+    if (!isHealth && process.env.LOG_REQUESTS !== '0') {
       const started = performance.now();
       res.on('close', () => log(JSON.stringify(requestLog(req.method ?? 'GET', pathname, res, started))));
     }
     try {
-      if (pathname === '/healthz') {
+      if (isHealth) {
         res.writeHead(200, { 'Content-Type': 'text/plain' }).end('ok');
       } else if (pathname === '/api/research-song') {
         await sendResponse(res, await apiHandler(toRequest(req)));
