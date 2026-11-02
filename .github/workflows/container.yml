@@ -153,7 +153,7 @@ jobs:
           gcloud run services update-traffic spoton --project "$PROJECT" --region "$REGION" --to-latest --quiet
 
           ok=true
-          [ "$(curl -s -o /dev/null -w '%{http_code}' "$url/healthz")" = 200 ] || ok=false
+          [ "$(curl -s -o /dev/null -w '%{http_code}' "$url/health")" = 200 ] || ok=false
           [ "$(curl -s -o /dev/null -w '%{http_code}' "$url/")" = 200 ] || ok=false
           [ "$(curl -s -o /dev/null -w '%{http_code}' "$url/api/research-song")" = 400 ] || ok=false
 
