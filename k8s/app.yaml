@@ -36,7 +36,7 @@ spec:
             - configMapRef: { name: spoton-config }
             - secretRef: { name: spoton-secrets }
           resources:
-            requests: { cpu: 100m, memory: 96Mi }
+            requests: { cpu: 100m, memory: 64Mi } # measured peak 22-68 MiB (docs/ops/kubernetes.md, loadtest/)
             limits: { cpu: 500m, memory: 256Mi }
           # /healthz never touches Redis: a cache outage must not restart or unroute healthy pods.
           startupProbe:

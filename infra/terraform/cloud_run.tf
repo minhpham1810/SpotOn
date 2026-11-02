@@ -10,8 +10,10 @@ resource "google_cloud_run_v2_service" "app" {
   template {
     service_account = google_service_account.runtime.email
     # Long SSE reports; the agent normally finishes in seconds.
-    timeout                          = "300s"
-    max_instance_request_concurrency = 20
+    timeout = "300s"
+    # Load test (loadtest/README.md): 200 concurrent streams on 1 vCPU with 0 errors and a 68 MiB peak,
+    # so 80 (Cloud Run's default) is safe and means fewer instances for the same traffic.
+    max_instance_request_concurrency = 80
 
     scaling {
       min_instance_count = 0 # scale to zero: no idle cost
@@ -28,7 +30,7 @@ resource "google_cloud_run_v2_service" "app" {
       resources {
         limits = {
           cpu    = "1"
-          memory = "512Mi"
+          memory = "256Mi" # measured peak 68 MiB under 200 streams
         }
         cpu_idle          = true # request-based billing: CPU only billed while serving
         startup_cpu_boost = false

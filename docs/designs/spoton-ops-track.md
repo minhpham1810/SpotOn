@@ -239,3 +239,6 @@ Environment: macOS arm64, Colima VM (2 vCPU / 4 GB), Docker 29.5.2, Compose 5.6.
 
 ### Stage 6: local Kubernetes on kind (2026-11-01)
 Full write-up: `docs/ops/kubernetes.md`. Highlights: SRH OOMKilled under kind (BEAM port table sized from nofile = 1,073,741,816; fixed with ERL_MAX_PORTS, peak 68 MiB); port-forward pins one pod (65/75 failed) vs in-cluster Service 99/100; preStop sleep 5 took pod-kill drill to 100/100 twice; bad image contained by maxUnavailable 0 (2/2 ready, rollout undo); 16Mi limit → OOMKilled/CrashLoopBackOff, old pods unaffected; app memory peak 22 MiB, so the 96Mi request is oversized pending Stage 7.
+
+### Stage 7: load tests (2026-11-01)
+Full write-up with conditions: `loadtest/README.md` (mock LLM, app at 1 vCPU / 512 MiB, k6 v2.3.0). Cached: 1,657 req/s, p95 40 ms, one Redis GET per request → found that cache-hit floods would spend Upstash's free monthly quota in ~5 min; added a per-instance memory cache → 18,172 req/s, p95 4.5 ms, 1 Redis GET for 545,622 requests. Fresh: 200 concurrent SSE streams on 1 vCPU, 0 errors, p95 3.95 s vs 3 s mock delay, 68 MiB peak → Cloud Run concurrency 20 → 80, memory 512 → 256 Mi; kind request 96 → 64 Mi.

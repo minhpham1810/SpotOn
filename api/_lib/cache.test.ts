@@ -57,3 +57,49 @@ test('setCachedReport writes the report with a 30-day expiry', async () => {
     ex: 60 * 60 * 24 * 30,
   });
 });
+
+test('a report read from Redis is then served from memory without another Redis call', async () => {
+  getMock.mockResolvedValueOnce(sampleReport);
+
+  expect(await getCachedReport('hot-track')).toEqual(sampleReport);
+  expect(await getCachedReport('hot-track')).toEqual(sampleReport);
+  expect(await getCachedReport('hot-track')).toEqual(sampleReport);
+
+  expect(getMock).toHaveBeenCalledTimes(1);
+});
+
+test('a freshly written report is served from memory', async () => {
+  await setCachedReport('new-track', sampleReport);
+
+  expect(await getCachedReport('new-track')).toEqual(sampleReport);
+  expect(getMock).not.toHaveBeenCalled();
+});
+
+test('memory entries expire after 10 minutes and Redis is asked again', async () => {
+  vi.useFakeTimers();
+  try {
+    getMock.mockResolvedValue(sampleReport);
+    await getCachedReport('expiring-track');
+    vi.advanceTimersByTime(10 * 60 * 1000 + 1);
+    await getCachedReport('expiring-track');
+    expect(getMock).toHaveBeenCalledTimes(2);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test('memory holds at most 200 reports, dropping the oldest first', async () => {
+  for (let i = 0; i < 201; i++) await setCachedReport(`bulk-${i}`, sampleReport);
+
+  getMock.mockResolvedValue(null);
+  expect(await getCachedReport('bulk-0')).toBeNull(); // evicted, so Redis (mocked empty) is asked
+  expect(await getCachedReport('bulk-200')).toEqual(sampleReport);
+  expect(getMock).toHaveBeenCalledTimes(1);
+});
+
+test('a Redis miss is not remembered, so a later write is seen', async () => {
+  getMock.mockResolvedValueOnce(null);
+  expect(await getCachedReport('miss-track')).toBeNull();
+  getMock.mockResolvedValueOnce(sampleReport);
+  expect(await getCachedReport('miss-track')).toEqual(sampleReport);
+});
