@@ -18,6 +18,7 @@ import SongDetailsHeader from './components/song-details/SongDetailsHeader';
 import SongDetailsSkeleton from './components/song-details/SongDetailsSkeleton';
 import ResearchProgress from './components/song-details/ResearchProgress';
 import SongDetailsError from './components/song-details/SongDetailsError';
+import SampleTreeCard from './components/song-details/SampleTreeCard';
 import { useAudioPreview } from './components/song-details/useAudioPreview';
 import { hasSongInfoContent, normalizeSongInfo } from './lib/songInfoNormalizer';
 import { renderShareCard, shareOrDownload } from './lib/shareCard';
@@ -180,6 +181,9 @@ const SongDetails: React.FC<SongDetailsProps> = ({ onAddToPlaylist, onLogout }) 
                         onTogglePreview={() => void preview.toggle()}
                         onShare={shareableInfo ? () => void handleShare() : undefined}
                     />
+                    <section aria-label="Samples" className="song-shell pb-5">
+                        <SampleTreeCard key={song.id} title={song.name} artist={song.artist} previewUrl={song.preview_url} />
+                    </section>
                     <section aria-label="Song research report" className="song-shell pb-20">
                         {isLoadingInfo ? <ResearchProgress steps={researchSteps} /> : researchError ? (
                             <article

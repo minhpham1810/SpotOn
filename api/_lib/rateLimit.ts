@@ -18,20 +18,30 @@ async function hit(redis: Redis, key: string, windowSeconds: number): Promise<nu
   return count;
 }
 
-export async function takeResearchBudget(clientIp: string, now = Date.now()): Promise<ResearchBudget> {
+// Per-IP hourly and global daily fixed windows, counted in Redis under `${name}-limit:*`.
+export async function takeBudget(
+  name: string,
+  limits: { perIpPerHour: number; globalPerDay: number },
+  clientIp: string,
+  now = Date.now()
+): Promise<ResearchBudget> {
   const redis = redisClient();
   const nowSeconds = Math.floor(now / 1000);
   const hourWindow = Math.floor(nowSeconds / 3600);
   const dayWindow = Math.floor(nowSeconds / 86400);
 
   // Check the caller first so one noisy client can't burn the shared daily budget.
-  if ((await hit(redis, `research-limit:ip:${clientIp}:${hourWindow}`, 3600)) > PER_IP_PER_HOUR) {
+  if ((await hit(redis, `${name}-limit:ip:${clientIp}:${hourWindow}`, 3600)) > limits.perIpPerHour) {
     return { allowed: false, reason: 'ip', retryAfterSeconds: (hourWindow + 1) * 3600 - nowSeconds };
   }
-  if ((await hit(redis, `research-limit:global:${dayWindow}`, 86400)) > GLOBAL_PER_DAY) {
+  if ((await hit(redis, `${name}-limit:global:${dayWindow}`, 86400)) > limits.globalPerDay) {
     return { allowed: false, reason: 'global', retryAfterSeconds: (dayWindow + 1) * 86400 - nowSeconds };
   }
   return { allowed: true };
+}
+
+export function takeResearchBudget(clientIp: string, now = Date.now()): Promise<ResearchBudget> {
+  return takeBudget('research', { perIpPerHour: PER_IP_PER_HOUR, globalPerDay: GLOBAL_PER_DAY }, clientIp, now);
 }
 
 // Vercel sets x-real-ip itself; server/index.ts overwrites it (socket address, or the

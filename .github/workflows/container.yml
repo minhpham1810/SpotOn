@@ -53,6 +53,43 @@ jobs:
             image --input /image.tar --severity HIGH,CRITICAL --ignore-unfixed \
             --no-progress --exit-code 1
 
+  matcher:
+    name: Matcher tests, smoke test, scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # The test stage runs pytest (synthetic known-answer audio, URL guard, HTTP contract) at build time.
+      - name: Unit tests (image test stage)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: matcher
+          target: test
+          cache-from: type=gha,scope=matcher
+          cache-to: type=gha,mode=max,scope=matcher
+
+      - name: Build runtime image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: matcher
+          load: true
+          tags: spoton-matcher:ci
+          cache-from: type=gha,scope=matcher
+
+      - name: Smoke test
+        run: scripts/smoke-test-matcher.sh spoton-matcher:ci
+
+      - name: Scan for fixable HIGH/CRITICAL vulnerabilities
+        run: |
+          docker save spoton-matcher:ci -o "$RUNNER_TEMP/matcher.tar"
+          docker run --rm -v "$RUNNER_TEMP/matcher.tar:/image.tar:ro" "$TRIVY_IMAGE" \
+            image --input /image.tar --severity HIGH,CRITICAL --ignore-unfixed \
+            --no-progress --exit-code 1
+
   publish:
     name: Publish image
     needs: verify

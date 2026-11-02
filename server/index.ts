@@ -9,8 +9,17 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import researchSong from '../api/research-song';
+import sampleTree from '../api/sample-tree';
+import sampleMatch from '../api/sample-match';
 
 type Handler = (request: Request) => Promise<Response>;
+
+// The same functions Vercel serves from api/*.ts.
+const API_ROUTES: Record<string, Handler> = {
+  '/api/research-song': researchSong,
+  '/api/sample-tree': sampleTree,
+  '/api/sample-match': sampleMatch,
+};
 
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -47,7 +56,7 @@ function toRequest(req: IncomingMessage): Request {
   }
   // The rate limiter keys on x-real-ip; never trust a client-sent value.
   headers.set('x-real-ip', clientAddress(req));
-  // shortcut: GET/HEAD only (the only API route is GET); add a body via Readable.toWeb(req) when a POST route exists.
+  // shortcut: GET/HEAD only (every API route is GET); add a body via Readable.toWeb(req) when a POST route exists.
   return new Request(new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`), {
     method: req.method,
     headers,
@@ -113,7 +122,7 @@ export function requestLog(method: string, path: string, res: ServerResponse, st
   };
 }
 
-export function createApp(distDir: string, apiHandler: Handler = researchSong, log = console.log) {
+export function createApp(distDir: string, routes: Record<string, Handler> = API_ROUTES, log = console.log) {
   const root = resolve(distDir);
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const { pathname } = new URL(req.url ?? '/', 'http://localhost');
@@ -127,8 +136,8 @@ export function createApp(distDir: string, apiHandler: Handler = researchSong, l
     try {
       if (isHealth) {
         res.writeHead(200, { 'Content-Type': 'text/plain' }).end('ok');
-      } else if (pathname === '/api/research-song') {
-        await sendResponse(res, await apiHandler(toRequest(req)));
+      } else if (Object.prototype.hasOwnProperty.call(routes, pathname)) {
+        await sendResponse(res, await routes[pathname](toRequest(req)));
       } else if (req.method === 'GET' || req.method === 'HEAD') {
         await serveStatic(res, root, pathname);
       } else {
