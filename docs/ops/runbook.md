@@ -74,7 +74,7 @@ Return to normal with `--to-latest`.
 
 ## Known gotchas
 
-- **Upstash deletes free databases after 14 days with no activity.** The original SpotOn database was found deleted on 2026-11-01 and replaced with `spoton-cache` (us-east-1). Production degrades quietly (cache misses only) on `master` before PR #2, but with the rate limiter it fails closed: every fresh report returns 503. Keep some traffic flowing, or check the Upstash console before demos. Open item: a scheduled keepalive.
+- **Upstash deletes free databases after 14 days with no activity.** The original SpotOn database was found deleted on 2026-11-01 and replaced with `spoton-cache` (us-east-1). Production degrades quietly (cache misses only) on `master` before PR #2, but with the rate limiter it fails closed: every fresh report returns 503. `.github/workflows/keepalive.yml` requests one fixed cached report every 5 days (a single Redis GET), and fails loudly if production can't serve it. GitHub disables scheduled workflows after 60 days without repository activity, so re-enable it in the Actions tab if the repo goes quiet.
 - **Two Spotify apps.** `SpotOn` is the browser login app (`VITE_SPOTIFY_CLIENT_ID`, redirect URIs). `SpotOn-Server` holds the server client-credentials pair (`SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET`). Rotate the secret on `SpotOn-Server`, then set the pair together everywhere.
 - **Vercel env changes need a new deployment** before they take effect.
 
