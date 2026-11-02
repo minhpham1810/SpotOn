@@ -55,7 +55,7 @@ scripts/demo-down.sh   # deletes the service, confirms none are left
 ```
 Register `<url>/callback` in the Spotify dashboard for login to work on that URL.
 
-While the service is up, every merge to `master` deploys automatically: CI updates the image by digest, routes traffic to the new revision, smoke-tests it, and on failure sends 100% of traffic back to the previous revision.
+While the service is up, every merge to `master` deploys automatically through `scripts/cloud-run-deploy.sh`: update by digest (clearing any command override), route traffic to the new revision, smoke-test it (`/health` body must be `ok`, `/` 200, API validation 400), and on failure send 100% of traffic back to the revision that was serving. Each change waits for the service to be Ready and retries Cloud Run's 409 conflicts. Deploys and drills share one concurrency group, so they never overlap.
 
 ## Procedures
 
@@ -96,6 +96,6 @@ Old Gemini and Tavily keys still exist and must be deleted by hand once producti
 | Drill | How | Expect |
 |---|---|---|
 | Spoofed client IP | Temporarily set `RESEARCH_LIMIT_PER_IP_HOUR=1` on the service; send two fresh requests with different forged `X-Forwarded-For` values | Second gets 429: the limiter keyed on the address Google's front end appended, not the forged one |
-| Bad deploy | Merge a change that breaks `/healthz` while the demo is up | Deploy job fails, traffic returns to the previous revision, site stays up |
+| Bad deploy | `scripts/rollback-drill.sh` locally, or Actions → *Rollback drill* → Run workflow (from master, demo up) | A release that passes the internal probe but fails the public smoke test is refused; traffic returns to the previous revision; the good image is redeployed. Measured 2026-11-02: refused after 18 s, `/health` ok throughout. |
 | Missing secret | Destroy all versions of `tavily-api-key`, roll a revision | New revision fails to start (secret `latest` unresolvable); old revision keeps serving |
 | Forgotten demo | Leave it up overnight | Billing report next day; the $5 budget emails at 10% |
