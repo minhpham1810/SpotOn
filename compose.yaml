@@ -25,6 +25,7 @@ services:
   # No published port: only the app reaches it, over the compose network.
   matcher:
     build: matcher
+    init: true # forwards SIGTERM even before Python installs its handler (PID 1 ignores it until then)
     read_only: true
     tmpfs:
       - /tmp # numba's JIT cache

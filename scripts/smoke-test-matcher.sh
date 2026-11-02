@@ -49,4 +49,17 @@ start=$(date +%s)
 docker stop "$NAME" >/dev/null
 [ $(( $(date +%s) - start )) -lt 5 ] || fail "SIGTERM not handled (stop took >= 5s)"
 
-echo "PASS: healthy, uid $user, no pip, read-only rootfs, input refused, graceful stop (readyz $ready)"
+# A stop during startup (imports, background warm-up) must be just as quick. As soon as Python has its SIGTERM
+# handler (PID 1 ignores SIGTERM until then; compose's `init: true` covers that first instant), stop it.
+docker rm -f "$NAME" >/dev/null
+docker run -d --name "$NAME" --read-only --tmpfs /tmp "$IMAGE" >/dev/null
+for _ in $(seq 1 100); do
+  caught=$(docker exec "$NAME" sh -c "awk '/^SigCgt/ {print \$2}' /proc/1/status" 2>/dev/null || true)
+  [ -n "$caught" ] && [ $(( 0x$caught & (1 << 14) )) -ne 0 ] && break   # bit 14 = SIGTERM
+  sleep 0.05
+done
+# Milliseconds: the old bug (waiting on warm-up downloads) took ~1 s on a fast laptop and >= 5 s in CI; fixed, ~0.1 s.
+ms=$(python3 -c 'import subprocess, sys, time; t = time.monotonic(); subprocess.run(["docker", "stop", sys.argv[1]], capture_output=True, check=True); print(int((time.monotonic() - t) * 1000))' "$NAME")
+[ "$ms" -lt 750 ] || fail "SIGTERM during startup not handled promptly (stop took ${ms} ms)"
+
+echo "PASS: healthy, uid $user, no pip, read-only rootfs, input refused, graceful stop, stop during startup ${ms} ms (readyz $ready)"
