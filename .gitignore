@@ -43,3 +43,7 @@ infra/terraform/.terraform/
 infra/terraform/*.tfstate*
 infra/terraform/terraform.tfvars
 infra/terraform/*.tfplan
+
+# Python (matcher/)
+__pycache__/
+.pytest_cache/

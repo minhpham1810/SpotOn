@@ -1,0 +1,2 @@
+# Test-only, installed in the image's test stage.
+pytest==9.2.0

@@ -1,4 +1,4 @@
-# Local stack: the app plus a real Redis behind Upstash's HTTP protocol,
+# Local stack: the app, the sample matcher, and a real Redis behind Upstash's HTTP protocol,
 # so the unchanged @upstash/redis client works without an Upstash account.
 #   docker compose up --build    then open http://127.0.0.1:8080
 services:
@@ -16,9 +16,20 @@ services:
       # Always use the local cache, even if .env points at a real Upstash database.
       UPSTASH_REDIS_REST_URL: http://redis-http
       UPSTASH_REDIS_REST_TOKEN: local-dev-token
+      MATCHER_URL: http://matcher:8000
     read_only: true
     depends_on:
       - redis-http
+      - matcher
+
+  # No published port: only the app reaches it, over the compose network.
+  matcher:
+    build: matcher
+    read_only: true
+    tmpfs:
+      - /tmp # numba's JIT cache
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
 
   redis-http:
     image: hiett/serverless-redis-http:0.0.10

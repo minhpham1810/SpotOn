@@ -32,7 +32,7 @@ beforeAll(async () => {
   await mkdir(join(distDir, 'assets'));
   await writeFile(join(distDir, 'index.html'), '<html>app</html>');
   await writeFile(join(distDir, 'assets', 'app-abc123.js'), 'console.log(1)');
-  server = createServer(createApp(distDir, apiHandler, (line) => logLines.push(line)));
+  server = createServer(createApp(distDir, { '/api/research-song': apiHandler }, (line) => logLines.push(line)));
   await new Promise<void>((ready) => server.listen(0, '127.0.0.1', ready));
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });

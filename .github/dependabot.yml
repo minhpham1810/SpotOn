@@ -9,3 +9,12 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  # The sample matcher's base image and exact Python pins.
+  - package-ecosystem: docker
+    directory: /matcher
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /matcher
+    schedule:
+      interval: weekly

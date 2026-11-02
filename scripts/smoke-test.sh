@@ -41,6 +41,8 @@ code() { curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PORT}$1"; }
 [ "$(code /song/some-id)" = 200 ] || fail "SPA fallback"
 [ "$(code /assets/does-not-exist.js)" = 404 ] || fail "missing asset should 404"
 [ "$(code '/api/research-song')" = 400 ] || fail "API input validation"
+[ "$(code '/api/sample-tree')" = 400 ] || fail "sample tree input validation"
+[ "$(code '/api/sample-match?child=https://evil.com/a&parent=https://evil.com/b')" = 400 ] || fail "sample match URL allowlist"
 
 start=$(date +%s)
 docker stop "$NAME" >/dev/null

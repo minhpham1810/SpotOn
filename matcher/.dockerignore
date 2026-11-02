@@ -1,0 +1,7 @@
+# Only the service code and its pins go into the image.
+*
+!samplematch/
+!tests/
+!requirements.txt
+!requirements-test.txt
+**/__pycache__
