@@ -6,18 +6,23 @@
 """
 from __future__ import annotations
 
-import json
-import logging
 import os
 import signal
-import threading
-import time
-from dataclasses import asdict
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from .audio import AudioError, is_preview_url, preview_fingerprint
-from .background import Background
-from .fingerprint import match
+# As PID 1 in a container, SIGTERM is ignored until a handler exists, and importing librosa/numba below takes
+# seconds. Until main() installs the graceful handler there is nothing to drain, so just exit.
+signal.signal(signal.SIGTERM, lambda *_: os._exit(0))
+
+import json  # noqa: E402
+import logging  # noqa: E402
+import threading  # noqa: E402
+import time  # noqa: E402
+from dataclasses import asdict  # noqa: E402
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer  # noqa: E402
+
+from .audio import AudioError, is_preview_url, preview_fingerprint  # noqa: E402
+from .background import Background  # noqa: E402
+from .fingerprint import match  # noqa: E402
 
 VERSION = "fp1"          # bump when scores change; the app's cache keys include it
 MAX_BODY = 4096
@@ -106,7 +111,11 @@ def main() -> None:
     signal.signal(signal.SIGTERM, lambda *_: threading.Thread(target=server.shutdown).start())
     log.info("matcher listening on :%s", server.server_address[1])
     server.serve_forever()
-    server.server_close()
+    server.server_close()          # waits for in-flight requests
+    # Exit now: interpreter shutdown would join the background warm-up pool, which on a cold start can still
+    # be downloading previews, and outlast Docker's stop grace period (seen in CI: stop took >= 5 s).
+    logging.shutdown()
+    os._exit(0)
 
 
 if __name__ == "__main__":
