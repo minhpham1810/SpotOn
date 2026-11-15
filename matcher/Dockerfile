@@ -2,7 +2,7 @@
 # Sample matcher: a private service the SpotOn app calls. Build context is matcher/.
 
 # ---- deps: pinned wheels into a venv (PyAV ships its own minimal FFmpeg, so no apt packages) ----
-FROM python:3.13-slim@sha256:2d44738ebf4ce5f63b9d9ea871e9c7cfdc0426f7b0c97cac915fd88ded1d86bb AS deps
+FROM python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928 AS deps
 ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 RUN python -m venv /venv
 COPY requirements.txt .
@@ -18,7 +18,7 @@ COPY tests ./tests
 RUN /venv/bin/python -m pytest tests -q -p no:cacheprovider -W ignore::FutureWarning
 
 # ---- runtime ----
-FROM python:3.13-slim@sha256:2d44738ebf4ce5f63b9d9ea871e9c7cfdc0426f7b0c97cac915fd88ded1d86bb
+FROM python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928
 # The service never installs anything: drop pip so its own dependencies aren't in the image.
 RUN rm -rf /usr/local/lib/python3.13/site-packages/pip* /usr/local/bin/pip*
 COPY --from=deps /venv /venv
